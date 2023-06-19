@@ -46,3 +46,10 @@ app.*.map.json
 # Firebase files
 /Backend/serviceAccountKey.json
 /Frontend/deep_plant_app/android/app/google-services.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
