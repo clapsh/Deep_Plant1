@@ -12,6 +12,7 @@ void main() async {
   runApp(const MyApp());
 }
 
+// 라우팅
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'DeepPlant-demo',
+      // 기본 색상
       theme: ThemeData(
         primaryColor: const Color.fromRGBO(51, 51, 51, 1),
         buttonTheme:

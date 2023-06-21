@@ -6,8 +6,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonBgColor = Theme.of(context).primaryColor;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('홈'),
@@ -17,12 +15,14 @@ class HomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // 로그인 버튼
             ElevatedButton(
               onPressed: () {
+                // 로그인 화면을 push한다.
                 context.push('/sign-in');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: buttonBgColor,
+                backgroundColor: Theme.of(context).primaryColor,
               ),
               child: const Text(
                 '로그인',
