@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:deep_plant_app/pages/show_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -31,9 +30,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
     }
   }
 
-  // 이미지 촬영을 위한 메소드이다.
-  // ImagePicker()로 해당 메소드를 호출하고,
-  // 카메라를 source로 하여 촬영한다.
+  // 이미지 촬영을 위한 메소드
   void _pickImage() async {
     final imagePicker = ImagePicker();
     final pickedImageFile = await imagePicker.pickImage(
@@ -42,33 +39,22 @@ class _LoggedInPageState extends State<LoggedInPage> {
     );
 
     setState(() {
-      isLoading = true;
+      isLoading = true; // 로딩 활성화
 
       if (pickedImageFile != null) {
-        // 만약 촬영한 이미지 파일이 존재한다면 해당 코드를 실행한다.
         // pickedImage에 촬영한 이미지를 달아놓는다.
         pickedImage = File(pickedImageFile.path);
       }
     });
-    // Firebase Storage의 저장 위치를 가리키는 변수를 생성하고 putFile()을 통해 촬영한 이미지를 해당 위치에 저장한다.
-    final refImage = FirebaseStorage.instance
-        .ref()
-        .child(loggedUser!.uid)
-        .child('${DateTime.now()}.png');
-    await refImage.putFile(pickedImage!);
+
     setState(() {
-      isLoading = false;
+      isLoading = false; // 로딩 비활성화
     });
 
-    turnPage();
+    turnPage(); // 데이터 처리가 완료되면 다음 페이지 push
   }
 
-  @override
-  void initState() {
-    super.initState();
-    getCurrentUser();
-  }
-
+  // 다음 페이지 push 함수
   void turnPage() {
     Navigator.push(
       context,
@@ -76,6 +62,12 @@ class _LoggedInPageState extends State<LoggedInPage> {
         builder: (context) => ShowImage(image: pickedImage),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getCurrentUser();
   }
 
   @override
@@ -99,6 +91,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
         ],
       ),
       body: Center(
+        // 카메라 버튼
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -117,6 +110,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
                 ),
               ),
             ),
+            // 데이터를 처리하는 동안 로딩 위젯 보여주기
             isLoading ? const CircularProgressIndicator() : Container(),
           ],
         ),

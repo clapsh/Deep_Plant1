@@ -18,7 +18,7 @@ class _SignInState extends State<SignIn> {
   // firbase authentic
   final _authentication = FirebaseAuth.instance;
 
-  // 유효성 확인
+  // 유효성 확인 함수
   void _tryValidation() {
     final isValid = _formKey.currentState!.validate();
     if (isValid) {
@@ -26,8 +26,8 @@ class _SignInState extends State<SignIn> {
     }
   }
 
+  // 데이터를 가져오는 비동기 함수
   void fetchData() async {
-    // 데이터를 가져오는 비동기 함수
     setState(() {
       isLoading = true; // 로딩 상태를 활성화
     });
@@ -57,6 +57,7 @@ class _SignInState extends State<SignIn> {
 
     final currentContext = context;
 
+    // 데이터 fetch 성공시 다음 페이지를 push
     Future.delayed(Duration.zero, () {
       currentContext.pushReplacement('/logged-in');
     });
@@ -71,7 +72,7 @@ class _SignInState extends State<SignIn> {
       ),
       body: GestureDetector(
         onTap: () {
-          FocusScope.of(context).unfocus();
+          FocusScope.of(context).unfocus(); // 키보드 unfocus
         },
         child: Center(
           child: SingleChildScrollView(
@@ -81,14 +82,15 @@ class _SignInState extends State<SignIn> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Padding(
+                    // 딥플랜트 로고 이미지
                     padding: const EdgeInsets.only(bottom: 20),
                     child: ColorFiltered(
                       colorFilter: const ColorFilter.mode(
                           Colors.black, BlendMode.modulate),
                       child: Image.asset(
                         'assets/images/logo.png',
-                        width: 300, // 이미지의 가로 크기 조절
-                        height: 60, // 이미지의 세로 크기 조절
+                        width: 300,
+                        height: 60,
                       ),
                     ),
                   ),
@@ -100,8 +102,10 @@ class _SignInState extends State<SignIn> {
                     ),
                   ),
                   Container(
+                    // 아이디 입력 필드
                     padding: const EdgeInsets.fromLTRB(60, 5, 60, 10),
                     child: TextFormField(
+                      // 유효성 검사
                       validator: (value) {
                         if (value!.isEmpty || !value.contains('@')) {
                           return '올바른 아이디를 입력하세요.';
@@ -132,9 +136,11 @@ class _SignInState extends State<SignIn> {
                     ),
                   ),
                   Container(
+                    // 비밀번호 입력 필드
                     padding: const EdgeInsets.fromLTRB(60, 0, 60, 10),
                     child: TextFormField(
                       obscureText: true,
+                      // 유효성 검사
                       validator: (value) {
                         if (value!.isEmpty || value.length < 6) {
                           return '올바른 비밀번호를 입력하세요.';
@@ -166,6 +172,7 @@ class _SignInState extends State<SignIn> {
                   ),
                   Column(
                     children: [
+                      // 로그인 버튼
                       SizedBox(
                         width: 290,
                         child: ElevatedButton(
@@ -186,11 +193,13 @@ class _SignInState extends State<SignIn> {
                           ),
                         ),
                       ),
+                      // 데이터를 처리하는 동안 로딩 위젯 보여주기
                       isLoading
                           ? const CircularProgressIndicator()
                           : Container(),
                     ],
                   ),
+                  // 비밀번호 찾기 버튼
                   TextButton(
                     onPressed: () {},
                     child: const Text(
@@ -200,10 +209,12 @@ class _SignInState extends State<SignIn> {
                       ),
                     ),
                   ),
+                  // 회원가입 버튼
                   SizedBox(
                     width: 150,
                     child: ElevatedButton(
                       onPressed: () {
+                        // 회원가입 페이지를 push
                         context.go('/sign-in/sign-up');
                       },
                       style: ElevatedButton.styleFrom(
