@@ -15,8 +15,9 @@
    - 정성훈
    - 박수현
 2. Frontend
-   - 정성훈
+   - 전수현
    - 송의영
+   - 김성중
 
 ## 3. Development Contents
 
