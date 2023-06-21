@@ -1,5 +1,6 @@
 from flask import Flask # Flask Server import 
 import firebase_admin # Firestore init
+import os # Server Port init
 
 app = Flask(__name__)
 
@@ -28,3 +29,11 @@ AWS S3 DB 구조 설계 - MySQL 사용
 3. [heatedMeats] table 
 	 primary_key => 
 """
+
+# Server 구동
+if __name__ == "__main__":
+    # 1. 서버 포트 지정
+    port = int(os.environ.get("PORT",8080))
+
+    #2. Flask 서버 실행
+    app.run(host= "0.0.0.0",port = port)
