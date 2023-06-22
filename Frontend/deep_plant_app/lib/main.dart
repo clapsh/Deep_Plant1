@@ -1,5 +1,6 @@
 import 'package:deep_plant_app/pages/home_page.dart';
 import 'package:deep_plant_app/pages/logged_in_page.dart';
+import 'package:deep_plant_app/pages/option_page.dart';
 import 'package:deep_plant_app/pages/sign_in_page.dart';
 import 'package:deep_plant_app/pages/sign_up_page.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -35,6 +36,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/logged-in',
       builder: (context, state) => const LoggedInPage(),
+    ),
+    GoRoute(
+      path: '/option',
+      builder: (context, state) => const OptionPage(),
     ),
   ],
 );
