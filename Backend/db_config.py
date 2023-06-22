@@ -1,8 +1,9 @@
+import keyId
 # RDS Configuration
 aws_db = {
     "user": "admin",
     "password": "qwer1234",
-    "host": "mysql-flaskserver.chd2ahxsforg.ap-northeast-2.rds.amazonaws.com",
+    "host": keyId.rds_host,
     "port": "3306",  # Maria DB의 포트
     "database": "flaskDatabase",
 }

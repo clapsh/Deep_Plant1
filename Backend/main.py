@@ -1,6 +1,5 @@
 from flask import Flask  # Flask Server import
 from db_connect import rds_db  # RDS Connection Check
-from firebase_connect import firebase_db  # Firebase Firestore Connection
 import db_config  # RDS Configuration
 import os  # Port Number assignment
 
@@ -44,4 +43,5 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
 
     # 2. Flask 서버 실행
-    create_app().run(host="0.0.0.0", port=port)
+    create_app()
+    app.run(host="0.0.0.0", port=port)
