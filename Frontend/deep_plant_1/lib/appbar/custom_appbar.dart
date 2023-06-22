@@ -1,20 +1,22 @@
-// 뒤로가기& 닫기 버튼이 둘 다 있는 AppBar
+// 뒤로가기& 닫기  AppBar
 
 import 'package:flutter/material.dart';
 
-class back_close_bar extends StatelessWidget implements PreferredSizeWidget {
+class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
-  final bool back;
-  final bool close;
+  final bool back_button;
+  final bool close_button;
 
-  const back_close_bar(
-      {required this.back, required this.close, required this.title});
+  const CustomAppBar(
+      {required this.title,
+      required this.back_button,
+      required this.close_button});
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
       elevation: 0,
-      leading: back
+      leading: back_button
           ? IconButton(
               icon: Icon(
                 Icons.arrow_back_ios,
@@ -32,7 +34,7 @@ class back_close_bar extends StatelessWidget implements PreferredSizeWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
-      actions: close
+      actions: close_button
           ? [
               IconButton(
                 icon: Icon(
