@@ -4,20 +4,27 @@ import 'package:flutter/material.dart';
 
 class back_close_bar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final bool back;
+  final bool close;
 
-  const back_close_bar({required this.title});
+  const back_close_bar(
+      {required this.back, required this.close, required this.title});
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
       elevation: 0,
-      leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back_ios,
-          color: Colors.black,
-        ),
-        onPressed: () {},
-      ),
+      leading: back
+          ? IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios,
+                color: Colors.black,
+              ),
+              onPressed: () {
+                // Handle back button pressed
+              },
+            )
+          : null,
       title: Text(
         title,
         style: TextStyle(
@@ -25,15 +32,17 @@ class back_close_bar extends StatelessWidget implements PreferredSizeWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
-      actions: [
-        IconButton(
-          icon: Icon(
-            Icons.close,
-            color: Colors.black,
-          ),
-          onPressed: () {},
-        ),
-      ],
+      actions: close
+          ? [
+              IconButton(
+                icon: Icon(
+                  Icons.close,
+                  color: Colors.black,
+                ),
+                onPressed: () {},
+              ),
+            ]
+          : null,
       backgroundColor: Colors.white,
     );
   }
