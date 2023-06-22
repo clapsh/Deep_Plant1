@@ -1,8 +1,9 @@
+import 'package:deep_plant_app/pages/certification_page.dart';
 import 'package:deep_plant_app/pages/home_page.dart';
+import 'package:deep_plant_app/pages/insertion_idnpw.dart';
 import 'package:deep_plant_app/pages/logged_in_page.dart';
-import 'package:deep_plant_app/pages/option_page.dart';
 import 'package:deep_plant_app/pages/sign_in_page.dart';
-import 'package:deep_plant_app/pages/sign_up_page.dart';
+import 'package:deep_plant_app/pages/succeed_sign_up_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -26,9 +27,25 @@ final _router = GoRouter(
           builder: (context, state) => const SignIn(),
           routes: [
             GoRoute(
-              path: 'sign-up',
-              builder: (context, state) => const SignUp(),
+              path: ('certification'),
+              builder: (context, state) => const Certification(),
+              routes: [
+                GoRoute(
+                  path: ('insert-id-pw'),
+                  builder: (context, state) => const InsertionIdnPw(),
+                  routes: [
+                    GoRoute(
+                      path: ('succeed-sign-up'),
+                      builder: (context, state) => const SucceedSignUp(),
+                    ),
+                  ],
+                ),
+              ],
             ),
+            // GoRoute(
+            //   path: 'sign-up',
+            //   builder: (context, state) => const SignUp(),
+            // ),
           ],
         ),
       ],
@@ -36,10 +53,6 @@ final _router = GoRouter(
     GoRoute(
       path: '/logged-in',
       builder: (context, state) => const LoggedInPage(),
-    ),
-    GoRoute(
-      path: '/option',
-      builder: (context, state) => const OptionPage(),
     ),
   ],
 );

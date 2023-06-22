@@ -14,6 +14,11 @@ class _SignInState extends State<SignIn> {
   String userId = '';
   String userPw = '';
   bool isLoading = false;
+  bool isChecked = false;
+
+  // dropdown 버튼 리스트
+  List<String> dropdownList = ['사용자 1', '사용자 2', '3'];
+  String selectedDropdown = '사용자 1';
 
   // firbase authentic
   final _authentication = FirebaseAuth.instance;
@@ -59,17 +64,13 @@ class _SignInState extends State<SignIn> {
 
     // 데이터 fetch 성공시 다음 페이지를 push
     Future.delayed(Duration.zero, () {
-      currentContext.pushReplacement('/option');
+      currentContext.pushReplacement('/logged-in');
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('로그인'),
-        backgroundColor: Theme.of(context).primaryColor,
-      ),
       body: GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus(); // 키보드 unfocus
@@ -83,7 +84,7 @@ class _SignInState extends State<SignIn> {
                 children: [
                   Padding(
                     // 딥플랜트 로고 이미지
-                    padding: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.only(bottom: 5),
                     child: ColorFiltered(
                       colorFilter: const ColorFilter.mode(
                           Colors.black, BlendMode.modulate),
@@ -95,15 +96,19 @@ class _SignInState extends State<SignIn> {
                     ),
                   ),
                   const Text(
-                    '로그인',
+                    '딥에이징',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(
+                    height: 60,
+                  ),
                   Container(
                     // 아이디 입력 필드
-                    padding: const EdgeInsets.fromLTRB(60, 5, 60, 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 55),
+                    margin: const EdgeInsets.symmetric(vertical: 3),
                     child: TextFormField(
                       // 유효성 검사
                       validator: (value) {
@@ -118,17 +123,18 @@ class _SignInState extends State<SignIn> {
                       onChanged: (value) {
                         userId = value;
                       },
+
                       decoration: InputDecoration(
+                          label: const Center(
+                            child: Text('아이디'),
+                          ),
                           filled: true,
                           fillColor: Colors.grey[200],
-                          labelText: 'ID', // 입력 필드 위에 표시될 라벨 텍스트
                           hintText: '아이디를 입력하세요', // 입력 필드에 힌트로 표시될 텍스트
-                          prefixIcon:
-                              const Icon(Icons.person), // 입력 필드 왼쪽에 표시될 아이콘
-                          suffixIcon:
-                              const Icon(Icons.clear), // 입력 필드 오른쪽에 표시될 아이콘
+
+                          suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
+                            borderRadius: BorderRadius.circular(30),
                             borderSide: BorderSide.none,
                           ),
                           contentPadding:
@@ -137,7 +143,8 @@ class _SignInState extends State<SignIn> {
                   ),
                   Container(
                     // 비밀번호 입력 필드
-                    padding: const EdgeInsets.fromLTRB(60, 0, 60, 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 55),
+                    margin: const EdgeInsets.symmetric(vertical: 3),
                     child: TextFormField(
                       obscureText: true,
                       // 유효성 검사
@@ -153,82 +160,126 @@ class _SignInState extends State<SignIn> {
                       onChanged: (value) {
                         userPw = value;
                       },
+
                       decoration: InputDecoration(
+                          label: const Center(
+                            child: Text('비밀번호'),
+                          ),
                           filled: true,
                           fillColor: Colors.grey[200],
-                          labelText: 'PW', // 입력 필드 위에 표시될 라벨 텍스트
                           hintText: '비빌번호를 입력하세요', // 입력 필드에 힌트로 표시될 텍스트
-                          prefixIcon:
-                              const Icon(Icons.key), // 입력 필드 왼쪽에 표시될 아이콘
-                          suffixIcon:
-                              const Icon(Icons.clear), // 입력 필드 오른쪽에 표시될 아이콘
+                          suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
+                            borderRadius: BorderRadius.circular(30),
                             borderSide: BorderSide.none,
                           ),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 16)),
                     ),
                   ),
-                  Column(
-                    children: [
-                      // 로그인 버튼
-                      SizedBox(
-                        width: 290,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            _tryValidation();
-                            fetchData();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            elevation: 3,
-                            backgroundColor: Colors.white,
+                  Container(
+                    // dropdown 버튼
+                    width: 300,
+                    height: 50,
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+
+                    decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.grey.shade400,
+                          width: 1.0,
+                        ),
+                        borderRadius: BorderRadius.circular(30)),
+                    child: DropdownButton(
+                      value: selectedDropdown,
+                      items: dropdownList.map((String item) {
+                        return DropdownMenuItem<String>(
+                          value: item,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Center(
+                                child: Text(
+                                  item,
+                                ),
+                              ),
+                            ],
                           ),
-                          child: Text(
-                            '로그인',
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        );
+                      }).toList(),
+                      onChanged: (dynamic value) {
+                        setState(() {
+                          selectedDropdown = value;
+                        });
+                      },
+                      isExpanded: true,
+                      borderRadius: BorderRadius.circular(30),
+                      underline: Container(
+                        decoration: const BoxDecoration(
+                          border: Border(
+                              bottom: BorderSide(
+                                  color: Colors.transparent, width: 0)),
                         ),
                       ),
-                      // 데이터를 처리하는 동안 로딩 위젯 보여주기
-                      isLoading
-                          ? const CircularProgressIndicator()
-                          : Container(),
-                    ],
+                      icon: const Icon(
+                        Icons.arrow_drop_down_sharp,
+                        size: 40,
+                      ),
+                    ),
                   ),
-                  // 비밀번호 찾기 버튼
+
+                  // 회원가입 버튼
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      // 회원가입 페이지를 push
+                      context.go('/sign-in/certification');
+                    },
                     child: const Text(
-                      '비밀번호 찾기',
+                      '회원가입',
                       style: TextStyle(
                         color: Colors.black54,
                       ),
                     ),
                   ),
-                  // 회원가입 버튼
+                  Row(
+                    children: [
+                      const SizedBox(
+                        width: 40,
+                      ),
+                      Checkbox(
+                        value: isChecked,
+                        onChanged: (value) {},
+                      ),
+                      const Text('자동 로그인'),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 45,
+                  ),
                   SizedBox(
-                    width: 150,
+                    width: 200,
+                    height: 50,
                     child: ElevatedButton(
-                      onPressed: () {
-                        // 회원가입 페이지를 push
-                        context.go('/sign-in/sign-up');
+                      onPressed: () async {
+                        _tryValidation();
+                        fetchData();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
                       child: const Text(
-                        '회원가입',
+                        '확인',
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
                       ),
                     ),
                   ),
+                  // 데이터를 처리하는 동안 로딩 위젯 보여주기
+                  isLoading ? const CircularProgressIndicator() : Container(),
                 ],
               ),
             ),
