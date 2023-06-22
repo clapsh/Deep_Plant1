@@ -59,7 +59,7 @@ class _SignInState extends State<SignIn> {
 
     // 데이터 fetch 성공시 다음 페이지를 push
     Future.delayed(Duration.zero, () {
-      currentContext.pushReplacement('/logged-in');
+      currentContext.pushReplacement('/option');
     });
   }
 
