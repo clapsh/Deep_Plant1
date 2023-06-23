@@ -1,5 +1,7 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
-import 'package:deep_plant_app/source/api_Source.dart';
+import 'package:my_t/api_Source.dart';
 
 class dataTable extends StatefulWidget {
   const dataTable({super.key});
@@ -11,6 +13,7 @@ class dataTable extends StatefulWidget {
 class _dataTableState extends State<dataTable> {
   var apikey = "58%2FAb40DJd41UCVYmCZM89EUoOWqT0vuObbReDQCI6ufjHIJbhZOUtQnftZErMQf6%2FgEflZVctg97VfdvvtmQw%3D%3D";
   final _formkey = GlobalKey<FormState>();
+  final TextEditingController _textEditingController = TextEditingController();
 
   bool isFinal = false;
   int historyNum = 0;
@@ -30,22 +33,12 @@ class _dataTableState extends State<dataTable> {
   @override
   void initState() {
     super.initState();
-    print(baseData.length);
   }
 
   void _tryValidation() {
     final isValid = _formkey.currentState!.validate();
     if (isValid) {
       _formkey.currentState!.save();
-      isFinal = true;
-      print(isFinal);
-      print(tableData);
-      print(tableData[1].runtimeType);
-    } else {
-      isFinal = false;
-      tableData.clear();
-      print(isFinal);
-      print(tableData);
     }
   }
 
@@ -63,12 +56,21 @@ class _dataTableState extends State<dataTable> {
 
     final weatherData = await source.getJsonData();
 
-    String totalcount = weatherData['response']['body']['pageNo'];
-    String basedate = weatherData['response']['body']['items']['item'][5]['baseDate'];
-    String basetime = weatherData['response']['body']['items']['item'][5]['baseTime'];
-    String obsrvalue = weatherData['response']['body']['items']['item'][5]['obsrValue'];
+    if (weatherData != null) {
+      String totalcount = weatherData['response']['body']['pageNo'];
+      String basedate = weatherData['response']['body']['items']['item'][5]['baseDate'];
+      String basetime = weatherData['response']['body']['items']['item'][5]['baseTime'];
+      String obsrvalue = weatherData['response']['body']['items']['item'][5]['obsrValue'];
+      String category = weatherData['response']['body']['items']['item'][5]['category'];
+      String nxx = weatherData['response']['body']['items']['item'][5]['nx'];
+      String nyy = weatherData['response']['body']['items']['item'][5]['ny'];
 
-    tableData.addAll([totalcount, basedate, basetime, obsrvalue, '', '', '']);
+      tableData.addAll([totalcount, basedate, basetime, obsrvalue, category, nxx, nyy]);
+      isFinal = true;
+    } else {
+      isFinal = false;
+      tableData.clear();
+    }
   }
 
   @override
@@ -88,26 +90,27 @@ class _dataTableState extends State<dataTable> {
         foregroundColor: Colors.black,
         leading: ElevatedButton(
           onPressed: () {},
-          child: Icon(
-            Icons.arrow_back_ios,
-            color: Colors.black,
-          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             elevation: 0.0,
           ),
+          child: Icon(
+            Icons.arrow_back_ios,
+            color: Colors.black,
+          ),
         ),
         actions: [
           ElevatedButton(
-              onPressed: () {},
-              child: Icon(
-                Icons.close,
-                color: Colors.black,
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                elevation: 0.0,
-              )),
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              elevation: 0.0,
+            ),
+            child: Icon(
+              Icons.close,
+              color: Colors.black,
+            ),
+          ),
         ],
       ),
       body: GestureDetector(
@@ -131,6 +134,8 @@ class _dataTableState extends State<dataTable> {
                     child: Form(
                       key: _formkey,
                       child: TextFormField(
+                        controller: _textEditingController,
+                        maxLength: 12,
                         key: ValueKey(1),
                         validator: (value) {
                           if (value!.isEmpty || value.length < 4) {
@@ -157,6 +162,16 @@ class _dataTableState extends State<dataTable> {
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(25.0),
                                 )),
+                            errorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(width: 0.5, color: Colors.grey),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(25.0),
+                                )),
+                            focusedErrorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(width: 0.5, color: Colors.grey),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(25.0),
+                                )),
                             hintText: '이력번호 입력',
                             contentPadding: EdgeInsets.all(12.0),
                             fillColor: Colors.grey[200],
@@ -166,27 +181,36 @@ class _dataTableState extends State<dataTable> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.only(right: 15.0),
-                  child: SizedBox(
-                    height: 45,
-                    width: 85,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await fetchData(historyNum);
-                        _tryValidation();
-                        FocusScope.of(context).unfocus();
-                        setState(() {});
-                      },
-                      child: Text('검색'),
-                      style: ElevatedButton.styleFrom(
+                Column(children: [
+                  Padding(
+                    padding: EdgeInsets.only(right: 15.0),
+                    child: SizedBox(
+                      height: 45,
+                      width: 85,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          tableData.clear();
+                          _tryValidation();
+                          await fetchData(historyNum);
+                          setState(() {
+                            FocusScope.of(context).unfocus();
+                            _textEditingController.clear();
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey[800],
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25.0),
-                          )),
+                          ),
+                        ),
+                        child: Text('검색'),
+                      ),
                     ),
                   ),
-                ),
+                  SizedBox(
+                    height: 25.0,
+                  )
+                ]),
               ],
             ),
             SizedBox(
@@ -201,12 +225,12 @@ class _dataTableState extends State<dataTable> {
                 width: 350,
                 child: ElevatedButton(
                   onPressed: isFinal ? () => {} : null,
-                  child: Text('다음'),
                   style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[800],
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10.0),
                       )),
+                  child: Text('다음'),
                 ),
               ),
             ),
