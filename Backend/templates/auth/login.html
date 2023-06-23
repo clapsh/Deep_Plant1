@@ -1,15 +1,26 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Register{% endblock %}</h1>
+  <h1>{% block title %}Log In{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
   <form method="post">
-    <label for="username">Username</label>
+
+    <label for="exampleFormControlInput1" class="form-label">Email address</label>
+    <input type="email" name="email" class="form-control" id="exampleFormControlInput1" placeholder="name@example.com" autocomplete="off" required>
+
+    <!--<label for="username">Username</label>
     <input name="username" id="username" required>
     <label for="password">Password</label>
-    <input type="password" name="password" id="password" required>
-    <input type="submit" value="Register">
+    <input type="password" name="password" id="password" required>-->
+    <label for="inputPassword5" class="form-label">Password</label>
+    <input type="password" name ="password" id="inputPassword5" class="form-control" aria-labelledby="passwordHelpBlock" required>
+    <div id="passwordHelpBlock" class="form-text">
+      Your password must be 10-16 characters long, contain letters, a capital letter and numbers, and must not contain spaces, special characters, or emoji.
+    </div>
+    <div style="margin-top: 20px;">
+    <button type="submit" class="btn btn-outline-dark" style="width:20%">Log In</button>
+    </div>
   </form>
 {% endblock %}

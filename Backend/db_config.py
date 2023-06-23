@@ -1,10 +1,10 @@
 # RDS Configuration
 aws_db = {
-    "user": "{마스터 사용자 이름}",
-    "password": "{마스터 암호}",
-    "host": "{DB의 엔드포인트}",
+    "user": "admin",
+    "password": "qwer1234",
+    "host": "mysql-flaskserver.chd2ahxsforg.ap-northeast-2.rds.amazonaws.com",
     "port": "3306", # Maria DB의 포트
-    "database": "{DB에 만들어둔 database 이름}",
+    "database": "flaskDatabase",
 }
 
 SQLALCHEMY_TRACK_MODIFICATIONS = False
