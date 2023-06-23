@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class addiTion extends StatefulWidget {
-  const addiTion({super.key});
+class historyNumPage extends StatefulWidget {
+  const historyNumPage({super.key});
 
   @override
-  State<addiTion> createState() => _addiTionState();
+  State<historyNumPage> createState() => _historyNumPageState();
 }
 
-class _addiTionState extends State<addiTion> {
+class _historyNumPageState extends State<historyNumPage> {
   final orders = ['소', '돼지'];
   final largeOrders_1 = ['안심', '등심', '채끝', '목심', '앞다리', '우둔', '설도', '양지', '사태', '갈비'];
 
@@ -40,6 +40,10 @@ class _addiTionState extends State<addiTion> {
   void setOrder(String order) {
     if (order == '돼지') {
       selectedorder = 1;
+      isselectedlarge = false;
+      selectedlarge = 0;
+      selectedlittle = 0;
+      isFinal = false;
     }
   }
 
@@ -47,6 +51,8 @@ class _addiTionState extends State<addiTion> {
     for (int i = 0; i < 10; i++) {
       if (large == largeOrders_1[i]) {
         selectedlarge = i;
+        selectedLittles = null;
+        selectedlittle = 0;
         break;
       }
     }
@@ -78,26 +84,27 @@ class _addiTionState extends State<addiTion> {
         foregroundColor: Colors.black,
         leading: ElevatedButton(
           onPressed: () {},
-          child: Icon(
-            Icons.arrow_back_ios,
-            color: Colors.black,
-          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             elevation: 0.0,
           ),
+          child: Icon(
+            Icons.arrow_back_ios,
+            color: Colors.black,
+          ),
         ),
         actions: [
           ElevatedButton(
-              onPressed: () {},
-              child: Icon(
-                Icons.close,
-                color: Colors.black,
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                elevation: 0.0,
-              )),
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              elevation: 0.0,
+            ),
+            child: Icon(
+              Icons.close,
+              color: Colors.black,
+            ),
+          ),
         ],
       ),
       body: GestureDetector(
@@ -173,8 +180,8 @@ class _addiTionState extends State<addiTion> {
                     value: selectedOrders,
                     items: orders
                         .map((e) => DropdownMenuItem(
-                              child: Center(child: Text(e)),
                               value: e,
+                              child: Center(child: Text(e)),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -222,6 +229,7 @@ class _addiTionState extends State<addiTion> {
                   child: DropdownButton(
                       padding: EdgeInsets.only(left: 25.0),
                       underline: Container(),
+                      menuMaxHeight: 250.0,
                       alignment: Alignment.center,
                       elevation: 1,
                       borderRadius: BorderRadius.circular(25.0),
@@ -232,8 +240,8 @@ class _addiTionState extends State<addiTion> {
                       value: selectedLarges,
                       items: largeOrders_1
                           .map((e) => DropdownMenuItem(
-                                child: Center(child: Text(e)),
                                 value: e,
+                                child: Center(child: Text(e)),
                               ))
                           .toList(),
                       onChanged: isselectedorder
@@ -242,7 +250,6 @@ class _addiTionState extends State<addiTion> {
                                 selectedLarges = value as String;
                                 setLarge(selectedLarges!);
                                 isselectedlarge = true;
-                                isFinal = true;
                               });
                             }
                           : null),
@@ -265,6 +272,7 @@ class _addiTionState extends State<addiTion> {
                   child: DropdownButton(
                       padding: EdgeInsets.only(left: 25.0),
                       underline: Container(),
+                      menuMaxHeight: 250.0,
                       alignment: Alignment.center,
                       elevation: 1,
                       borderRadius: BorderRadius.circular(25.0),
@@ -275,8 +283,8 @@ class _addiTionState extends State<addiTion> {
                       value: selectedLittles,
                       items: tableData[selectedlarge]
                           .map((e) => DropdownMenuItem(
-                                child: Center(child: Text(e)),
                                 value: e,
+                                child: Center(child: Text(e)),
                               ))
                           .toList(),
                       onChanged: isselectedlarge
@@ -335,7 +343,7 @@ class _addiTionState extends State<addiTion> {
                       ),
                     ),
                   ),
-                  Container(
+                  SizedBox(
                     width: 20.0,
                     child: Divider(
                       color: Colors.grey[400],
@@ -376,12 +384,13 @@ class _addiTionState extends State<addiTion> {
                   width: 350,
                   child: ElevatedButton(
                     onPressed: isFinal ? () => {} : null,
-                    child: Text('다음'),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[800],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
-                        )),
+                      backgroundColor: Colors.grey[800],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    child: Text('다음'),
                   ),
                 ),
               ),
