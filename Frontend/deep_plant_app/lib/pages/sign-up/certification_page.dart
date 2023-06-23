@@ -1,13 +1,49 @@
+import 'package:deep_plant_app/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class Certification extends StatelessWidget {
-  const Certification({super.key});
+class Certification extends StatefulWidget {
+  final UserModel user;
+  const Certification({
+    super.key,
+    required this.user,
+  });
+
+  @override
+  State<Certification> createState() => _CertificationState();
+}
+
+class _CertificationState extends State<Certification> {
+  bool? _isChecked1 = false;
+  bool? _isChecked2 = false;
+  bool? _isChecked3 = false;
+  bool? _isChecked4 = false;
+
+  Color buttonColor = const Color.fromRGBO(51, 51, 51, 1).withOpacity(0.5);
+
+  void checkCheckBoxValues() {
+    if (_isChecked1 == true && _isChecked2 == true && _isChecked3 == true) {
+      setState(() {
+        _isChecked4 = true;
+      });
+    } else {
+      setState(() {
+        _isChecked4 = false;
+      });
+    }
+    if (_isChecked1 == true && _isChecked2 == true) {
+      setState(() {
+        buttonColor = Theme.of(context).primaryColor;
+      });
+    } else {
+      setState(() {
+        buttonColor = Theme.of(context).primaryColor.withOpacity(0.5);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    bool isChecked = false;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -47,8 +83,15 @@ class Certification extends StatelessWidget {
                     Row(
                       children: [
                         Checkbox(
-                          value: isChecked,
-                          onChanged: (value) {},
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                          value: _isChecked1,
+                          onChanged: (value) {
+                            setState(() {
+                              _isChecked1 = value;
+                            });
+                            checkCheckBoxValues();
+                          },
                         ),
                         const Text('개인정보 수집제공 동의 (필수)'),
                         const Spacer(),
@@ -63,8 +106,15 @@ class Certification extends StatelessWidget {
                     Row(
                       children: [
                         Checkbox(
-                          value: isChecked,
-                          onChanged: (value) {},
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                          value: _isChecked2,
+                          onChanged: (value) {
+                            setState(() {
+                              _isChecked2 = value;
+                            });
+                            checkCheckBoxValues();
+                          },
                         ),
                         const Text('제 3자 정보제공 동의 (필수)'),
                         const Spacer(),
@@ -79,8 +129,15 @@ class Certification extends StatelessWidget {
                     Row(
                       children: [
                         Checkbox(
-                          value: isChecked,
-                          onChanged: (value) {},
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                          value: _isChecked3,
+                          onChanged: (value) {
+                            setState(() {
+                              _isChecked3 = value;
+                            });
+                            checkCheckBoxValues();
+                          },
                         ),
                         const Text('알림받기 (선택)'),
                         const Spacer(),
@@ -92,8 +149,18 @@ class Certification extends StatelessWidget {
                     Row(
                       children: [
                         Checkbox(
-                          value: isChecked,
-                          onChanged: (value) {},
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                          value: _isChecked4,
+                          onChanged: (value) {
+                            setState(() {
+                              _isChecked1 = value;
+                              _isChecked2 = value;
+                              _isChecked3 = value;
+                              _isChecked4 = value;
+                            });
+                            checkCheckBoxValues();
+                          },
                         ),
                         const Text(
                           '모두 확인 및 동의합니다.',
@@ -110,11 +177,15 @@ class Certification extends StatelessWidget {
                       width: 350,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {
-                          context.go('/sign-in/certification/insert-id-pw');
-                        },
+                        onPressed: buttonColor == Theme.of(context).primaryColor
+                            ? () {
+                                context
+                                    .go('/sign-in/certification/insert-id-pw');
+                                widget.user.isAlarmed = _isChecked3;
+                              }
+                            : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
+                          backgroundColor: buttonColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
