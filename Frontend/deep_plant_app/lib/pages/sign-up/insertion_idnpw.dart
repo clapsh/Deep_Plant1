@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deep_plant_app/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,10 +16,43 @@ class InsertionIdnPw extends StatefulWidget {
 }
 
 class _InsertionIdnPwState extends State<InsertionIdnPw> {
+  final _formKey = GlobalKey<FormState>(); // form 구성
+
   List<String> dropdownList = ['사용자 1', '사용자 2', '사용자 3'];
   String selectedDropdown = '사용자 1';
   String userLevel = 'users_1';
-  String userEmail = '';
+  String _userName = '';
+  String _userEmail = '';
+  final String _userId = '';
+  final String _userPw = '';
+
+  // firbase authentic
+  final _authentication = FirebaseAuth.instance;
+
+  // 아이디 유효성 검사
+  String? idValidate(String? value) {
+    if (value!.isEmpty || !value.contains('@') || !value.contains('.')) {
+      return '아이디를 확인하세요.';
+    }
+    return null;
+  }
+
+  // 비밀번호 유효성 검사
+  String? pwValidate(String? value) {
+    if (value!.isEmpty || value.length < 10) {
+      return '비밀번호를 확인하세요.';
+    }
+
+    return null;
+  }
+
+  // 유효성 검사 함수
+  void _tryValidation() {
+    final isValid = _formKey.currentState!.validate();
+    if (isValid) {
+      _formKey.currentState!.save();
+    }
+  }
 
   Color buttonColor = const Color.fromRGBO(51, 51, 51, 1).withOpacity(0.5);
 
@@ -138,7 +172,7 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
                               return null;
                             },
                             onSaved: (value) {
-                              userEmail = value!;
+                              _userName = value!;
                             },
                             onChanged: (value) {
                               checkTextFieldValues();
@@ -181,12 +215,12 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
                               return null;
                             },
                             onSaved: (value) {
-                              userEmail = value!;
+                              _userEmail = value!;
                             },
                             onChanged: (value) {
                               checkTextFieldValues();
                               widget.user!.email = value;
-                              userEmail = value;
+                              _userEmail = value;
                             },
 
                             decoration: InputDecoration(
@@ -210,7 +244,7 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
                           height: 48,
                           child: ElevatedButton(
                             onPressed: () async {
-                              getByEmail(userEmail);
+                              getByEmail(_userEmail);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).primaryColor,

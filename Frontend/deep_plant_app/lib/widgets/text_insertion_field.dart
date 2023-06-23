@@ -19,13 +19,13 @@ class TextInsertionField extends StatelessWidget {
   final String? Function(String?)? validateFunc;
   final void Function(String?)? onSaveFunc;
   final void Function(String?)? onChangeFunc;
-  String mainText;
-  String hintText;
-  double width;
-  bool isObscure;
-  bool isCenter;
+  final String mainText;
+  final String hintText;
+  final double width;
+  final bool isObscure;
+  final bool isCenter;
 
-  TextInsertionField({
+  const TextInsertionField({
     super.key,
     required this.validateFunc,
     required this.onSaveFunc,
