@@ -41,10 +41,8 @@ class _ShowImageState extends State<ShowImage> {
     });
     try {
       // 이미지를 firbaseStorage에 userid/시간.png 형식으로 저장
-      final refImage = FirebaseStorage.instance
-          .ref()
-          .child(loggedUser!.uid)
-          .child('${DateTime.now()}.png');
+      final refImage =
+          FirebaseStorage.instance.ref().child('${loggedUser!.uid}.png');
       await refImage.putFile(widget.image!);
     } catch (e) {
       print(e);

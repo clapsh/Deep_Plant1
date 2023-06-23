@@ -1,9 +1,10 @@
-import 'package:deep_plant_app/pages/certification_page.dart';
+import 'package:deep_plant_app/models/user_model.dart';
+import 'package:deep_plant_app/pages/sign-up/certification_page.dart';
 import 'package:deep_plant_app/pages/home_page.dart';
-import 'package:deep_plant_app/pages/insertion_idnpw.dart';
+import 'package:deep_plant_app/pages/sign-up/insertion_idnpw.dart';
 import 'package:deep_plant_app/pages/logged_in_page.dart';
 import 'package:deep_plant_app/pages/sign_in_page.dart';
-import 'package:deep_plant_app/pages/succeed_sign_up_page.dart';
+import 'package:deep_plant_app/pages/sign-up/succeed_sign_up_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,8 @@ void main() async {
   await Firebase.initializeApp();
   runApp(const MyApp());
 }
+
+UserModel newUser = UserModel();
 
 // 라우팅
 final _router = GoRouter(
@@ -28,11 +31,15 @@ final _router = GoRouter(
           routes: [
             GoRoute(
               path: ('certification'),
-              builder: (context, state) => const Certification(),
+              builder: (context, state) => Certification(
+                user: newUser,
+              ),
               routes: [
                 GoRoute(
                   path: ('insert-id-pw'),
-                  builder: (context, state) => const InsertionIdnPw(),
+                  builder: (context, state) => InsertionIdnPw(
+                    user: newUser,
+                  ),
                   routes: [
                     GoRoute(
                       path: ('succeed-sign-up'),

@@ -1,9 +1,12 @@
+import 'package:deep_plant_app/widgets/text_insertion_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class SignIn extends StatefulWidget {
-  const SignIn({super.key});
+  const SignIn({
+    super.key,
+  });
 
   @override
   State<SignIn> createState() => _SignInState();
@@ -11,19 +14,36 @@ class SignIn extends StatefulWidget {
 
 class _SignInState extends State<SignIn> {
   final _formKey = GlobalKey<FormState>(); // form 구성
-  String userId = '';
-  String userPw = '';
+  String _userId = '';
+  String _userPw = '';
+
   bool isLoading = false;
-  bool isChecked = false;
+  bool? _isAutoLogin = false;
 
   // dropdown 버튼 리스트
-  List<String> dropdownList = ['사용자 1', '사용자 2', '3'];
+  List<String> dropdownList = ['사용자 1', '사용자 2', '사용자 3'];
   String selectedDropdown = '사용자 1';
 
   // firbase authentic
   final _authentication = FirebaseAuth.instance;
 
-  // 유효성 확인 함수
+  // 아이디 유효성 검사
+  String? idValidate(String? value) {
+    if (value!.isEmpty || !value.contains('@') || !value.contains('.')) {
+      return '아이디를 확인하세요.';
+    }
+    return null;
+  }
+
+  // 비밀번호 유효성 검사
+  String? pwValidate(String? value) {
+    if (value!.isEmpty || value.length < 10) {
+      return '비밀번호를 확인하세요.';
+    }
+    return null;
+  }
+
+  // 유효성 검사 함수
   void _tryValidation() {
     final isValid = _formKey.currentState!.validate();
     if (isValid) {
@@ -40,8 +60,8 @@ class _SignInState extends State<SignIn> {
     // 데이터를 가져오는 비동기 작업
     try {
       await _authentication.signInWithEmailAndPassword(
-        email: userId,
-        password: userPw,
+        email: _userId,
+        password: _userPw,
       );
     } catch (e) {
       setState(() {
@@ -60,11 +80,9 @@ class _SignInState extends State<SignIn> {
       isLoading = false; // 로딩 상태를 비활성화
     });
 
-    final currentContext = context;
-
     // 데이터 fetch 성공시 다음 페이지를 push
     Future.delayed(Duration.zero, () {
-      currentContext.pushReplacement('/logged-in');
+      context.pushReplacement('/logged-in');
     });
   }
 
@@ -105,84 +123,41 @@ class _SignInState extends State<SignIn> {
                   const SizedBox(
                     height: 60,
                   ),
-                  Container(
-                    // 아이디 입력 필드
-                    padding: const EdgeInsets.symmetric(horizontal: 55),
-                    margin: const EdgeInsets.symmetric(vertical: 3),
-                    child: TextFormField(
-                      // 유효성 검사
-                      validator: (value) {
-                        if (value!.isEmpty || !value.contains('@')) {
-                          return '올바른 아이디를 입력하세요.';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        userId = value!;
-                      },
-                      onChanged: (value) {
-                        userId = value;
-                      },
-
-                      decoration: InputDecoration(
-                          label: const Center(
-                            child: Text('아이디'),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[200],
-                          hintText: '아이디를 입력하세요', // 입력 필드에 힌트로 표시될 텍스트
-
-                          suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 16)),
-                    ),
+                  // 아이디 입력 필드
+                  TextInsertionField(
+                    validateFunc: idValidate,
+                    onSaveFunc: (value) {
+                      _userId = value!;
+                    },
+                    onChangeFunc: (value) {
+                      _userId = value!;
+                    },
+                    mainText: '아이디',
+                    hintText: '아이디를 확인하세요',
+                    width: 55,
+                    isObscure: false,
+                    isCenter: true,
                   ),
-                  Container(
-                    // 비밀번호 입력 필드
-                    padding: const EdgeInsets.symmetric(horizontal: 55),
-                    margin: const EdgeInsets.symmetric(vertical: 3),
-                    child: TextFormField(
-                      obscureText: true,
-                      // 유효성 검사
-                      validator: (value) {
-                        if (value!.isEmpty || value.length < 6) {
-                          return '올바른 비밀번호를 입력하세요.';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) {
-                        userPw = value!;
-                      },
-                      onChanged: (value) {
-                        userPw = value;
-                      },
-
-                      decoration: InputDecoration(
-                          label: const Center(
-                            child: Text('비밀번호'),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[200],
-                          hintText: '비빌번호를 입력하세요', // 입력 필드에 힌트로 표시될 텍스트
-                          suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 16)),
-                    ),
+                  // 비밀번호 입력 필드
+                  TextInsertionField(
+                    validateFunc: pwValidate,
+                    mainText: '비밀번호',
+                    hintText: '비밀번호를 입력하세요.',
+                    width: 55,
+                    isObscure: true,
+                    onSaveFunc: (value) {
+                      _userPw = value!;
+                    },
+                    onChangeFunc: (value) {
+                      _userPw = value!;
+                    },
+                    isCenter: true,
                   ),
+                  // dropdown 버튼
                   Container(
-                    // dropdown 버튼
                     width: 300,
                     height: 50,
                     margin: const EdgeInsets.symmetric(vertical: 3),
-
                     decoration: BoxDecoration(
                         border: Border.all(
                           color: Colors.grey.shade400,
@@ -190,6 +165,7 @@ class _SignInState extends State<SignIn> {
                         ),
                         borderRadius: BorderRadius.circular(30)),
                     child: DropdownButton(
+                      padding: const EdgeInsets.only(left: 40),
                       value: selectedDropdown,
                       items: dropdownList.map((String item) {
                         return DropdownMenuItem<String>(
@@ -246,8 +222,12 @@ class _SignInState extends State<SignIn> {
                         width: 40,
                       ),
                       Checkbox(
-                        value: isChecked,
-                        onChanged: (value) {},
+                        value: _isAutoLogin,
+                        onChanged: (value) {
+                          setState(() {
+                            _isAutoLogin = value;
+                          });
+                        },
                       ),
                       const Text('자동 로그인'),
                     ],
@@ -288,4 +268,13 @@ class _SignInState extends State<SignIn> {
       ),
     );
   }
+}
+
+class UserInfo {
+  String id;
+  String pw;
+  UserInfo({
+    required this.id,
+    required this.pw,
+  });
 }
