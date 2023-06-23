@@ -1,33 +1,15 @@
 from flask import Flask  # Flask Server import
+from routes import main  # Flask Server Routing pages
 from db_connect import rds_db  # RDS Connection Check
 import db_config  # RDS Configuration
 import os  # Port Number assignment
-
+from apscheduler.schedulers.background import BackgroundScheduler # Background running function
+import firebase_connect # Firebase Connect
 
 app = Flask(__name__)
-"""
-Firebase DB 구조 설계
-1. [users] collection 
-   document key => firebase authication userID
-   Field => lastLogin: String, freshMeats: List<String>, heatedMeats: List<String>
-2. [freshMeats] collection
-   document key => 육류이력코드 (OPEN API) , String
-   Field => 
-3. [heatedMeats] collection
+app.register_blueprint(main) # Register the BluePrint
 
-AWS S3 DB 구조 설계 - MySQL 사용
-1. [users] table 
-   primary_key => firebase authication userID
-   Field => lastLogin: String, freshMeats: List<String>, heatedMeats: List<String>
-2. [freshMeats] table 
-   primary_key => 육류이력코드 (OPEN API) , String
-   Field => 
-3. [heatedMeats] table 
-	 primary_key => 
-"""
-
-
-# RDS Server Configuration
+# 1. RDS & Server Connection
 def create_app(test_config=None):
     # Config 설정
     if test_config is None:
@@ -36,11 +18,18 @@ def create_app(test_config=None):
         app.config.update(test_config)
     rds_db.init_app(app)
 
+# 2. FireStore & Server Connection 
+firestore_conn = firebase_connect.FireBase_()
 
 # Server 구동
 if __name__ == "__main__":
     # 1. 서버 포트 지정
     port = int(os.environ.get("PORT", 8080))
+
+    # 2. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
+    scheduler = BackgroundScheduler(daemon=True,timezone='Asia/Seoul')
+    scheduler.add_job(firestore_conn.transferDbData,'interval',minutes=0.5)
+    scheduler.start()
 
     # 2. Flask 서버 실행
     create_app()
