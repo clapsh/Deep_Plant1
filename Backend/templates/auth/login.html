@@ -1,15 +1,40 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Register{% endblock %}</h1>
+  <h1>{% block title %}Log In{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
   <form method="post">
-    <label for="username">Username</label>
-    <input name="username" id="username" required>
-    <label for="password">Password</label>
-    <input type="password" name="password" id="password" required>
-    <input type="submit" value="Register">
+    {{ form.csrf_token }}
+
+    <!--이메일-->
+    {{form.email.label(class="form-label")}}
+    <div class="col-auto" style="display:flex;">
+      {{form.email(type="email" , class="form-control" ,id="exampleFormControlInput1", placeholder="name@example.com" ,autocomplete="off" , required="required")}}
+    </div>
+  
+    <!--비밀번호-->
+    {{form.password.label(class="form-label")}}
+    {{form.password( type="password" ,id="inputPassword5", class="form-control", aria_labelledby="passwordHelpBlock", required="required")}}
+
+    <!--로그인 상태 유지-->
+    <div class="form-group">
+      {{ form.remember_me.label }}
+      {{ form.remember_me }}
+    </div>
+
+    <!--로그인 버튼-->
+    <div class="form-group">
+      <div style="margin-top: 20px;">
+      {{ form.submit(class='btn btn-outline-dark') }}
+     </div>
+    </div>
+  
+    <!--form 에러 확인 -->
+    {% if form.errors %}
+    {{ form.errors }}
+    {% endif %}
+
   </form>
 {% endblock %}
