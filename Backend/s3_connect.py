@@ -6,8 +6,9 @@ IMAGE_FOLDER_PATH = "./images/"
 
 
 class S3Bucket:
-    def __init__(self, bucket):
-        self.bucket = bucket  # 버킷 지정
+    def __init__(self, folder):
+        self.bucket = keyId.s3_bucket_name  # 버킷 지정
+        self.folder = folder  # 저장할 폴더 지정
         try:
             self.s3 = boto3.client(
                 service_name="s3",
@@ -20,15 +21,18 @@ class S3Bucket:
         else:
             print("S3 Bucket Connected!")
 
-    def transferImageData(self):
+    def transferImageData(self):  # flask server -> S3 Database
         for filename in os.listdir(IMAGE_FOLDER_PATH):
-            filepath = os.path.join(IMAGE_FOLDER_PATH, filename)
-            if self.put_object(self.bucket, filepath, filename):
-                print(f"Successfully uploaded {filename} to {self.bucket}")
-                os.remove(filepath)
-                print(f"Successfully removed {filename} from local disk")
-            else:
-                print(f"Failed to upload {filename} to {self.bucket}")
+            if filename.endswith(".png"):
+                filepath = os.path.join(IMAGE_FOLDER_PATH, filename)
+                if self.put_object(self.bucket, filepath, f"{self.folder}/{filename}"):
+                    print(
+                        f"Successfully uploaded {filename} to {self.bucket}/{self.folder}"
+                    )
+                    os.remove(filepath)
+                    print(f"Successfully removed {filename} from local disk")
+                else:
+                    print(f"Failed to upload {filename} to {self.bucket}/{self.folder}")
 
     def put_object(self, bucket, filepath, access_key):  # (S3 <- Server) Upload Pic
         """
@@ -43,12 +47,13 @@ class S3Bucket:
                 Filename=filepath,  # 업로드할 파일 경로
                 Bucket=bucket,
                 Key=access_key,  # 업로드할 파일의 S3 내 위치와 이름을 나타낸다.
-                ExtraArgs={"ContentType": "image/jpg", "ACL": "public-read"},
+                ExtraArgs={"ContentType": "image/png", "ACL": "public-read"},
                 # ContentType 파일 형식 jpg로 설정
                 # ACL: 파일에 대한 접근 권한 설정
                 # public-read, private, public-read-write, authenticated-read
             )
         except Exception as e:
+            print(f"Error uploading file: {e}")
             return False
         return True
 
