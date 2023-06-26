@@ -50,7 +50,7 @@ class MyFlaskApp:
         self.app.run(host=host, port=port)
 
 
-# Server 구동
+#Server 구동
 if __name__ == "__main__":
     app = MyFlaskApp(db_config.config)
     # 1. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
