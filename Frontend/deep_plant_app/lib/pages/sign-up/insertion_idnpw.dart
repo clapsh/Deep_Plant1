@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deep_plant_app/models/user_model.dart';
+import 'package:deep_plant_app/widgets/text_insertion_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -21,10 +22,15 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
   List<String> dropdownList = ['사용자 1', '사용자 2', '사용자 3'];
   String selectedDropdown = '사용자 1';
   String userLevel = 'users_1';
-  String _userName = '';
+
   String _userEmail = '';
-  final String _userId = '';
-  final String _userPw = '';
+  String _userPw = '';
+
+  String? userCompany;
+  String? userPosition;
+  String? userCompanyAdress;
+
+  bool _isLoading = false;
 
   // firbase authentic
   final _authentication = FirebaseAuth.instance;
@@ -32,7 +38,7 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
   // 아이디 유효성 검사
   String? idValidate(String? value) {
     if (value!.isEmpty || !value.contains('@') || !value.contains('.')) {
-      return '아이디를 확인하세요.';
+      return '이메일을 확인하세요.';
     }
     return null;
   }
@@ -46,11 +52,20 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
     return null;
   }
 
+  // 비밀번호 재입력 유효성 검사
+  String? cPwValidate(String? value) {
+    if (value!.isEmpty || value != _userPw) {
+      return '비밀번호가 일치하지 않습니다.';
+    }
+    return null;
+  }
+
   // 유효성 검사 함수
   void _tryValidation() {
     final isValid = _formKey.currentState!.validate();
     if (isValid) {
       _formKey.currentState!.save();
+      signUpWithVerify();
     }
   }
 
@@ -61,6 +76,7 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
   TextEditingController textFieldController3 = TextEditingController();
   TextEditingController textFieldController4 = TextEditingController();
 
+  // 필수 입력 항목들이 입력됐는지 확인하는 함수
   void checkTextFieldValues() {
     if (textFieldController1.text.isNotEmpty &&
         textFieldController2.text.isNotEmpty &&
@@ -76,7 +92,8 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
     }
   }
 
-  void saveUserData() async {
+  // user의 정보를 저장하는 함수
+  void saveUserData(bool isVerified) async {
     CollectionReference users =
         FirebaseFirestore.instance.collection(userLevel);
 
@@ -85,6 +102,7 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
       'name': widget.user!.name,
       'email': widget.user!.email,
       'isAlarmed': widget.user!.isAlarmed,
+      'isVerified': isVerified,
     };
 
     // 데이터 저장
@@ -92,24 +110,36 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
     await document.set(data);
   }
 
-  Future<void> getByEmail(String email) async {
-    CollectionReference users =
-        FirebaseFirestore.instance.collection(userLevel);
-
-    // 이메일에 해당하는 문서 참조
-    DocumentReference documentReference = users.doc(email);
-    DocumentSnapshot documentSnapshot = await documentReference.get();
-
-    if (documentSnapshot.exists) {
-      // 이메일에 해당하는 문서가 있는 경우
-      print('Matching Document ID: ${documentSnapshot.id}');
-      print('Name: ${documentSnapshot.get('name')}');
-
-      // 추가 작업 수행 가능
-    } else {
-      // 이메일에 해당하는 문서가 없는 경우
-      print('No matching document found.');
+  // 회원가입 및 인증
+  Future<void> signUpWithVerify() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      // 새로운 유저 생성
+      UserCredential credential = await _authentication
+          .createUserWithEmailAndPassword(email: _userEmail, password: _userPw);
+      // 이메일 인증 보내기
+      await credential.user!.sendEmailVerification();
+      // 사용자의 정보를 firestore에 저장
+      saveUserData(credential.user!.emailVerified);
+      // 페이지 이동
+      context.go('/sign-in/certification/insert-id-pw/email-verification');
+    } on FirebaseAuthException catch (error) {
+      switch (error.code) {
+        case 'email-already-in-use':
+          print('이메일 중복');
+          break;
+        case 'invalid-email':
+          print('올바르지 않은 이메일');
+          break;
+        default:
+          print('Error');
+      }
     }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -148,396 +178,236 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(left: 10),
-                      child: Text('*이름'),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          // 이름 입력 필드
-                          width: 350,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          child: TextFormField(
-                            controller: textFieldController1,
-                            // 유효성 검사
-                            validator: (value) {
-                              if (value!.isEmpty || !value.contains('@')) {
-                                return '올바른 아이디를 입력하세요.';
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _userName = value!;
-                            },
-                            onChanged: (value) {
-                              checkTextFieldValues();
-                              widget.user!.name = value;
-                            },
-
-                            decoration: InputDecoration(
-                                label: const Text('이름'),
-                                filled: true,
-                                fillColor: Colors.grey[200],
-                                suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 16)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 10.0),
-                      child: Text('*이메일'),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          // 아이디 입력 필드
-                          width: 250,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          child: TextFormField(
-                            controller: textFieldController2,
-                            // 유효성 검사
-                            validator: (value) {
-                              if (value!.isEmpty || !value.contains('@')) {
-                                return '올바른 아이디를 입력하세요.';
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _userEmail = value!;
-                            },
-                            onChanged: (value) {
-                              checkTextFieldValues();
-                              widget.user!.email = value;
-                              _userEmail = value;
-                            },
-
-                            decoration: InputDecoration(
-                                label: const Text('example@example.com'),
-                                filled: true,
-                                fillColor: Colors.grey[200],
-                                suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                                border: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(30),
-                                    bottomLeft: Radius.circular(30),
-                                  ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 16)),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 100,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              getByEmail(_userEmail);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).primaryColor,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.only(
-                                  topRight: Radius.circular(30),
-                                  bottomRight: Radius.circular(30),
-                                ),
-                              ),
-                            ),
-                            child: const Text(
-                              '중복확인',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 10.0),
-                      child: Text('*비밀번호'),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          // 비밀번호 입력 필드
-                          width: 350,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          child: TextFormField(
-                            controller: textFieldController3,
-                            // 유효성 검사
-                            validator: (value) {
-                              if (value!.isEmpty || !value.contains('@')) {
-                                return '올바른 아이디를 입력하세요.';
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {},
-                            onChanged: (value) {
-                              checkTextFieldValues();
-                            },
-
-                            decoration: InputDecoration(
-                                label: const Text('영문+숫자'),
-                                filled: true,
-                                fillColor: Colors.grey[200],
-                                suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 16)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          // 비밀번호 재입력 필드
-                          width: 350,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          child: TextFormField(
-                            controller: textFieldController4,
-                            // 유효성 검사
-                            validator: (value) {
-                              if (value!.isEmpty || !value.contains('@')) {
-                                return '올바른 아이디를 입력하세요.';
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {},
-                            onChanged: (value) {
-                              checkTextFieldValues();
-                            },
-
-                            decoration: InputDecoration(
-                                label: const Text('비밀번호 확인'),
-                                filled: true,
-                                fillColor: Colors.grey[200],
-                                suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 16)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 10.0),
-                      child: Text('권한'),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 10),
+                        child: Text('*이름'),
+                      ),
+                      // 이름 입력 필드
+                      TextInsertionField(
+                        validateFunc: null,
+                        onSaveFunc: null,
+                        onChangeFunc: (value) {
+                          checkTextFieldValues();
+                          widget.user!.name = value;
+                        },
+                        mainText: '이름',
+                        hintText: '이름을 입력하세요.',
+                        width: 0,
+                        isObscure: false,
+                        isCenter: false,
+                        controller: textFieldController1,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 10.0),
+                        child: Text('*이메일'),
+                      ),
+                      TextInsertionField(
+                        validateFunc: idValidate,
+                        onSaveFunc: (value) {
+                          _userEmail = value!;
+                        },
+                        onChangeFunc: (value) {
+                          checkTextFieldValues();
+                          widget.user!.email = value;
+                        },
+                        mainText: 'example@example.com',
+                        hintText: '',
+                        width: 0,
+                        isObscure: false,
+                        isCenter: false,
+                        controller: textFieldController2,
+                      ),
+                      const SizedBox(height: 16),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 10.0),
+                        child: Text('*비밀번호'),
+                      ),
+                      // 비밀번호 입력 필드
+                      TextInsertionField(
+                        validateFunc: pwValidate,
+                        onSaveFunc: (value) {
+                          _userPw = value!;
+                        },
+                        onChangeFunc: (value) {
+                          checkTextFieldValues();
+                          _userPw = value!;
+                        },
+                        mainText: '영문+숫자+특수문자',
+                        hintText: '',
+                        width: 0,
+                        isObscure: false,
+                        isCenter: false,
+                        controller: textFieldController3,
+                      ),
+                      // 비밀번호 재입력 필드
+                      TextInsertionField(
+                        validateFunc: cPwValidate,
+                        onSaveFunc: null,
+                        onChangeFunc: (value) {
+                          checkTextFieldValues();
+                        },
+                        mainText: '비밀번호 확인',
+                        hintText: '',
+                        width: 0,
+                        isObscure: false,
+                        isCenter: false,
+                        controller: textFieldController4,
+                      ),
+                      const SizedBox(height: 16),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 10.0),
+                        child: Text('권한'),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                           // dropdown 버튼
-                          width: 350,
-                          height: 48,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-
-                          decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Colors.grey.shade400,
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(30)),
-                          child: DropdownButton(
-                            padding: const EdgeInsets.only(left: 40),
-                            value: selectedDropdown,
-                            items: dropdownList.map((String item) {
-                              return DropdownMenuItem<String>(
-                                value: item,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Center(
-                                      child: Text(
-                                        item,
+                          Container(
+                            width: 350,
+                            height: 48,
+                            margin: const EdgeInsets.symmetric(vertical: 3),
+                            decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.grey.shade400,
+                                  width: 1.0,
+                                ),
+                                borderRadius: BorderRadius.circular(30)),
+                            child: DropdownButton(
+                              padding: const EdgeInsets.only(left: 40),
+                              value: selectedDropdown,
+                              items: dropdownList.map((String item) {
+                                return DropdownMenuItem<String>(
+                                  value: item,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Center(
+                                        child: Text(
+                                          item,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (dynamic value) {
-                              if (value == dropdownList[0]) {
-                                userLevel = 'users_1';
-                              } else if (value == dropdownList[1]) {
-                                userLevel = 'users_2';
-                              } else {
-                                userLevel = 'users_3';
-                              }
-                            },
-                            isExpanded: true,
-                            borderRadius: BorderRadius.circular(30),
-                            underline: Container(
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                    bottom: BorderSide(
-                                        color: Colors.transparent, width: 0)),
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.arrow_drop_down_sharp,
-                              size: 40,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 10.0),
-                      child: Text('소속'),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          // 아이디 입력 필드
-                          width: 350,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          child: TextFormField(
-                            // 유효성 검사
-                            validator: (value) {
-                              if (value!.isEmpty || !value.contains('@')) {
-                                return '올바른 아이디를 입력하세요.';
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {},
-                            onChanged: (value) {},
-
-                            decoration: InputDecoration(
-                                label: const Text('회사명 입력'),
-                                filled: true,
-                                fillColor: Colors.grey[200],
-                                suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 16)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          // 아이디 입력 필드
-                          width: 350,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          child: TextFormField(
-                            // 유효성 검사
-                            validator: (value) {
-                              if (value!.isEmpty || !value.contains('@')) {
-                                return '올바른 아이디를 입력하세요.';
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {},
-                            onChanged: (value) {},
-
-                            decoration: InputDecoration(
-                                label: const Text('직책 입력'),
-                                filled: true,
-                                fillColor: Colors.grey[200],
-                                suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 16)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          // 아이디 입력 필드
-                          width: 250,
-                          margin: const EdgeInsets.symmetric(vertical: 3),
-                          child: TextFormField(
-                            // 유효성 검사
-                            validator: (value) {
-                              if (value!.isEmpty || !value.contains('@')) {
-                                return '올바른 아이디를 입력하세요.';
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {},
-                            onChanged: (value) {},
-
-                            decoration: InputDecoration(
-                                label: const Text('회사주소 검색'),
-                                filled: true,
-                                fillColor: Colors.grey[200],
-                                suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
-                                border: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(30),
-                                    bottomLeft: Radius.circular(30),
+                                    ],
                                   ),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(horizontal: 16)),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 100,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).primaryColor,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.only(
-                                  topRight: Radius.circular(30),
-                                  bottomRight: Radius.circular(30),
+                                );
+                              }).toList(),
+                              onChanged: (dynamic value) {
+                                if (value == dropdownList[0]) {
+                                  userLevel = 'users_1';
+                                } else if (value == dropdownList[1]) {
+                                  userLevel = 'users_2';
+                                } else {
+                                  userLevel = 'users_3';
+                                }
+                              },
+                              isExpanded: true,
+                              borderRadius: BorderRadius.circular(30),
+                              underline: Container(
+                                decoration: const BoxDecoration(
+                                  border: Border(
+                                      bottom: BorderSide(
+                                          color: Colors.transparent, width: 0)),
                                 ),
                               ),
-                            ),
-                            child: const Text(
-                              '검색',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
+                              icon: const Icon(
+                                Icons.arrow_drop_down_sharp,
+                                size: 40,
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 10.0),
+                        child: Text('소속'),
+                      ),
+
+                      // 회사명 입력 필드
+                      TextInsertionField(
+                        validateFunc: null,
+                        onSaveFunc: null,
+                        onChangeFunc: (value) {
+                          userCompany = value;
+                        },
+                        mainText: '회사명 입력',
+                        hintText: '',
+                        width: 0,
+                        isObscure: false,
+                        isCenter: false,
+                      ),
+
+                      // 직책 입력 필드
+                      TextInsertionField(
+                        validateFunc: null,
+                        onSaveFunc: null,
+                        onChangeFunc: (value) {
+                          userPosition = value;
+                        },
+                        mainText: '직책 입력',
+                        hintText: '',
+                        width: 0,
+                        isObscure: false,
+                        isCenter: false,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // 회사주소 입력 필드
+                          Container(
+                            width: 250,
+                            margin: const EdgeInsets.symmetric(vertical: 3),
+                            child: TextFormField(
+                              onChanged: (value) {
+                                userCompanyAdress = value;
+                              },
+                              decoration: InputDecoration(
+                                  label: const Text('회사주소 검색'),
+                                  filled: true,
+                                  fillColor: Colors.grey[200],
+                                  suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
+                                  border: const OutlineInputBorder(
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(30),
+                                      bottomLeft: Radius.circular(30),
+                                    ),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16)),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 100,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).primaryColor,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(30),
+                                    bottomRight: Radius.circular(30),
+                                  ),
+                                ),
+                              ),
+                              child: const Text(
+                                '검색',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SizedBox(
@@ -546,9 +416,10 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
                 child: ElevatedButton(
                   onPressed: buttonColor == Theme.of(context).primaryColor
                       ? () async {
-                          saveUserData();
-                          context.go(
-                              '/sign-in/certification/insert-id-pw/succeed-sign-up');
+                          _tryValidation();
+
+                          // context.go(
+                          //     '/sign-in/certification/insert-id-pw/succeed-sign-up');
                         }
                       : null,
                   style: ElevatedButton.styleFrom(
@@ -566,6 +437,7 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
                   ),
                 ),
               ),
+              _isLoading ? const CircularProgressIndicator() : Container(),
             ],
           ),
         ),
