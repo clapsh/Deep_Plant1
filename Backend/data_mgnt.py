@@ -4,6 +4,6 @@ from flask import (
 )
 from werkzeug.exceptions import abort
 
-from auth import login_required
+from auth.auth import login_required
 
 bp = Blueprint('data_mgnt', __name__, url_prefix='/data')

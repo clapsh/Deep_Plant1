@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:deep_plant_app/pages/show_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 class LoggedInPage extends StatefulWidget {
@@ -81,7 +82,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
           IconButton(
             onPressed: () {
               _authentication.signOut();
-              Navigator.pop(context);
+              context.go('/');
             },
             icon: const Icon(
               Icons.exit_to_app,
