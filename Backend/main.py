@@ -8,43 +8,67 @@ from apscheduler.schedulers.background import (
 )  # Background running function
 import firebase_connect  # Firebase Connect
 import s3_connect  # S3 Connect
-import keyId
-
-app = Flask(__name__)
-app.register_blueprint(main)  # Register the BluePrint
-
-
-# 1. RDS & Server Connection
-def create_app(test_config=None):
-    # Config 설정
-    if test_config is None:
-        app.config.from_object(db_config)
-    else:
-        app.config.update(test_config)
-    rds_db.init_app(app)
+import keyId  # Key data in this Backend file
+from flask_sqlalchemy import SQLAlchemy  # For implement RDS database in server
+import db_config  # For implement RDS database in server
 
 
-# 2. FireStore & Server Connection
-firestore_conn = firebase_connect.FireBase_()
+class MyFlaskApp:
+    def __init__(self, config):
+        self.app = Flask(__name__)
 
-# 3. S3 Connection
-s3_conn = s3_connect.S3Bucket(keyId.s3_folder_name)
+        # 1. Route Connection
+        self.app.register_blueprint(main)
+
+        # 2. RDS Config
+        self.config = config
+        self.app.config["SQLALCHEMY_DATABASE_URI"] = self._create_sqlalchemy_uri()
+        self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+        self.db = SQLAlchemy(self.app)
+
+        # 3. Firebase Config
+        self.firestore_conn = firebase_connect.FireBase_()
+
+        # 4. S3 Database Config
+        self.s3_conn = s3_connect.S3Bucket(keyId.s3_folder_name)
+
+    def transfer_data_to_rds(self):
+        """
+        Firebase에서 새로 저장된 데이터들은 각각 다음의 변수에 저장됩니다.
+        self.firestore_conn.temp_user1_data <= user1 database
+        self.firestore_conn.temp_user2_data <= user2 database
+        self.firestore_conn.temp_user3_data <= user3 database
+        self.firestore_conn.temp_meat_data <= meat database
+        """
+        pass
+
+    def _create_sqlalchemy_uri(self):  # uri 생성
+        aws_db = self.config["aws_db"]
+        return f"mysql+pymysql://{aws_db['user']}:{aws_db['password']}@{aws_db['host']}:{aws_db['port']}/{aws_db['database']}?charset=utf8"
+
+    def run(self, host="0.0.0.0", port=8080):  # server 구동
+        self.app.run(host=host, port=port)
+
 
 # Server 구동
 if __name__ == "__main__":
-    # 1. 서버 포트 지정
-    port = int(os.environ.get("PORT", 8080))
-
-    # 2. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
+    app = MyFlaskApp(db_config.config)
+    # 1. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
     scheduler = BackgroundScheduler(daemon=True, timezone="Asia/Seoul")
     scheduler.add_job(
-        firestore_conn.transferDbData, "interval", minutes=0.5
+        app.firestore_conn.transferDbData, "interval", minutes=0.5
     )  # 주기적 데이터 전송 firebase -> flask server
+
+    # 2. Send data to S3 storage (Flask server(images folder) -> S3), 30sec
     scheduler.add_job(
-        s3_conn.transferImageData, "interval", minutes=0.5
-    )  # 주기적 이미지 데이터 전송 flaks server -> S3
+        app.s3_conn.transferImageData, "interval", minutes=0.5
+    )  # 주기적 이미지 데이터 전송 flask server -> S3
+
+    # 3. Send data to RDS (FireStore -> RDS), 30sec
+    scheduler.add_job(
+        app.transfer_data_to_rds, "interval", minutes=0.5
+    )  # 주기적 Json Data 전송 flask server -> RDS
     scheduler.start()
 
-    # 2. Flask 서버 실행
-    create_app()
-    app.run(host="0.0.0.0", port=port)
+    # 3. Flask 서버 실행
+    app.run()
