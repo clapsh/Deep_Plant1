@@ -153,7 +153,7 @@ class _SignInState extends State<SignIn> {
                     },
                     isCenter: true,
                   ),
-                  // dropdown 버튼
+                  // 사용자 권한 dropdown 버튼
                   Container(
                     width: 300,
                     height: 50,
@@ -203,7 +203,7 @@ class _SignInState extends State<SignIn> {
                     ),
                   ),
 
-                  // 회원가입 버튼
+                  // 회원가입 텍스트버튼
                   TextButton(
                     onPressed: () {
                       // 회원가입 페이지를 push
@@ -216,6 +216,7 @@ class _SignInState extends State<SignIn> {
                       ),
                     ),
                   ),
+                  // 자동로그인 체크박스
                   Row(
                     children: [
                       const SizedBox(
@@ -235,6 +236,7 @@ class _SignInState extends State<SignIn> {
                   const SizedBox(
                     height: 45,
                   ),
+                  // 확인 버튼
                   SizedBox(
                     width: 200,
                     height: 50,
