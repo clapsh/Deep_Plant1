@@ -1,0 +1,4 @@
+Flask
+APScheduler
+firebase-admin
+boto3

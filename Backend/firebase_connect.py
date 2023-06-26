@@ -102,7 +102,6 @@ class FireBase_:
             else:
                 print(f"No such file: {item_id}.png")
         
-
     def server2firestore(self):  # Firestore에 data 넣기 (Firestore <- Flask Server)
         pass
 

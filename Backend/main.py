@@ -5,6 +5,7 @@ import db_config  # RDS Configuration
 import os  # Port Number assignment
 from apscheduler.schedulers.background import BackgroundScheduler # Background running function
 import firebase_connect # Firebase Connect
+import s3_connect
 
 app = Flask(__name__)
 app.register_blueprint(main) # Register the BluePrint
@@ -21,6 +22,9 @@ def create_app(test_config=None):
 # 2. FireStore & Server Connection 
 firestore_conn = firebase_connect.FireBase_()
 
+# 3. S3 Connection
+s3_conn = s3_connect.S3Bucket()
+
 # Server 구동
 if __name__ == "__main__":
     # 1. 서버 포트 지정
@@ -28,7 +32,8 @@ if __name__ == "__main__":
 
     # 2. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
     scheduler = BackgroundScheduler(daemon=True,timezone='Asia/Seoul')
-    scheduler.add_job(firestore_conn.transferDbData,'interval',minutes=0.5)
+    scheduler.add_job(firestore_conn.transferDbData,'interval',minutes=0.5) # 주기적 데이터 전송 firebase -> flask server 
+    scheduler.add_job(s3_conn.transferImageData,'interval',minutes=0.5) # 주기적 이미지 데이터 전송 flaks server -> S3 
     scheduler.start()
 
     # 2. Flask 서버 실행
