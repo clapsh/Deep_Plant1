@@ -1,6 +1,5 @@
 from flask import Flask  # Flask Server import
 from routes import main  # Flask Server Routing pages
-from db_connect import rds_db  # RDS Connection Check
 import db_config  # RDS Configuration
 import os  # Port Number assignment
 from apscheduler.schedulers.background import (
@@ -34,6 +33,7 @@ class MyFlaskApp:
 
     def transfer_data_to_rds(self):
         """
+        Flask server -> RDS
         Firebase에서 새로 저장된 데이터들은 각각 다음의 변수에 저장됩니다.
         self.firestore_conn.temp_user1_data <= user1 database
         self.firestore_conn.temp_user2_data <= user2 database
