@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class OptionPage extends StatelessWidget {
   const OptionPage({super.key});
@@ -9,7 +10,11 @@ class OptionPage extends StatelessWidget {
       appBar: AppBar(
         actions: [
           IconButton(
-              onPressed: () {}, icon: const Icon(Icons.person_outline_rounded))
+            onPressed: () {
+              context.go('/option/my-page');
+            },
+            icon: const Icon(Icons.person_outline_rounded),
+          )
         ],
         title: const Text('옵션 창'),
       ),
@@ -49,42 +54,13 @@ class OptionPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      width: 240,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                '육류 예측',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: GestureDetector(
-                    onTap: () {},
+                // 육류 등록 버튼
+                GestureDetector(
+                  onTap: () {
+                    context.go('/option/insert-his-num');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(5.0),
                     child: Container(
                       padding: const EdgeInsets.all(20),
                       width: 240,
@@ -101,6 +77,39 @@ class OptionPage extends StatelessWidget {
                             children: [
                               Text(
                                 '육류 등록',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // 데이어 관리 버튼
+                Padding(
+                  padding: const EdgeInsets.all(5.0),
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      width: 240,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                '데이터 관리',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 15,
