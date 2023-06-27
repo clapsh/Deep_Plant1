@@ -46,6 +46,30 @@ class _QrPageState extends State<QrPage> {
               centerTitle: true,
               elevation: 0.0,
               actions: [
+                // ElevatedButton(
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor: Colors.black,
+                //     ),
+                //     onPressed: () async {
+                //       await controller?.pauseCamera();
+                //     },
+                //     child: Icon(
+                //       Icons.last_page,
+                //       color: Colors.white,
+                //       size: 40.0,
+                //     )),
+                // ElevatedButton(
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor: Colors.black,
+                //     ),
+                //     onPressed: () async {
+                //       await controller?.resumeCamera();
+                //     },
+                //     child: Icon(
+                //       Icons.start,
+                //       color: Colors.white,
+                //       size: 40.0,
+                //     )),
                 elevated(
                   icon: Icons.close,
                   colorb: Colors.black,
@@ -190,44 +214,3 @@ class _QrPageState extends State<QrPage> {
     super.dispose();
   }
 }
-
-// 이들은 제외된 기능이다. 각각 플래시, 화면 전환의 기능이 담긴다.
-// Row(
-//                     mainAxisAlignment: MainAxisAlignment.center,
-//                     crossAxisAlignment: CrossAxisAlignment.center,
-//                     children: <Widget>[
-//                       Container(
-//                         margin: const EdgeInsets.all(8),
-//                         child: ElevatedButton(
-//                             onPressed: () async {
-//                               await controller?.toggleFlash();
-//                               setState(() {});
-//                             },
-//                             child: FutureBuilder(
-//                               future: controller?.getFlashStatus(),
-//                               builder: (context, snapshot) {
-//                                 return Text('Flash: ${snapshot.data}');
-//                               },
-//                             )),
-//                       ),
-//                       Container(
-//                         margin: const EdgeInsets.all(8),
-//                         child: ElevatedButton(
-//                             onPressed: () async {
-//                               await controller?.flipCamera();
-//                               setState(() {});
-//                             },
-//                             child: FutureBuilder(
-//                               future: controller?.getCameraInfo(),
-//                               builder: (context, snapshot) {
-//                                 if (snapshot.data != null) {
-//                                   return Text(
-//                                       'Camera facing ${describeEnum(snapshot.data!)}');
-//                                 } else {
-//                                   return const Text('loading');
-//                                 }
-//                               },
-//                             )),
-//                       )
-//                     ],
-//                   ),

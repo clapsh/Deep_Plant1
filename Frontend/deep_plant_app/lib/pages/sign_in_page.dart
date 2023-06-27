@@ -104,8 +104,7 @@ class _SignInState extends State<SignIn> {
                     // 딥플랜트 로고 이미지
                     padding: const EdgeInsets.only(bottom: 5),
                     child: ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                          Colors.black, BlendMode.modulate),
+                      colorFilter: const ColorFilter.mode(Colors.black, BlendMode.modulate),
                       child: Image.asset(
                         'assets/images/logo.png',
                         width: 300,
@@ -191,9 +190,7 @@ class _SignInState extends State<SignIn> {
                       borderRadius: BorderRadius.circular(30),
                       underline: Container(
                         decoration: const BoxDecoration(
-                          border: Border(
-                              bottom: BorderSide(
-                                  color: Colors.transparent, width: 0)),
+                          border: Border(bottom: BorderSide(color: Colors.transparent, width: 0)),
                         ),
                       ),
                       icon: const Icon(

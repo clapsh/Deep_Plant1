@@ -21,6 +21,11 @@ class _LoggedInPageState extends State<LoggedInPage> {
   File? pickedImage;
   bool isLoading = false;
   bool isFinal = false;
+  bool isImageAssigned = false;
+  late DateTime now;
+  String year = '';
+  String month = '';
+  String day = '';
 
   // user 정보 가져오기
   void getCurrentUser() {
@@ -48,6 +53,11 @@ class _LoggedInPageState extends State<LoggedInPage> {
       if (pickedImageFile != null) {
         // pickedImage에 촬영한 이미지를 달아놓는다.
         pickedImage = File(pickedImageFile.path);
+        now = DateTime.now();
+        year = now.year.toString();
+        month = now.month.toString();
+        day = now.day.toString();
+        isImageAssigned = true;
       }
     });
 
@@ -63,6 +73,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
     });
     try {
       // 이미지를 firbaseStorage에 userid/시간.png 형식으로 저장
+      // 이미지 이름 생성!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       final refImage = FirebaseStorage.instance.ref().child('${loggedUser!.uid}.png');
       await refImage.putFile(pickedImage!);
     } catch (e) {
@@ -117,7 +128,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
                   icon: Icon(
                     Icons.info_outline,
                     color: Colors.grey[600],
-                    size: 20.0,
+                    size: 25.0,
                   ),
                 ),
               ],
@@ -150,7 +161,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10.0),
-                      color: Colors.grey[400],
+                      color: isImageAssigned ? Colors.grey[800] : Colors.grey[400],
                       border: Border.all(
                         color: Colors.grey,
                         width: 0.5,
@@ -158,7 +169,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
                     ),
                     height: 40.0,
                     child: Text(
-                      '월',
+                      isImageAssigned ? '$month월' : '월',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
@@ -176,7 +187,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10.0),
-                      color: Colors.grey[400],
+                      color: isImageAssigned ? Colors.grey[800] : Colors.grey[400],
                       border: Border.all(
                         color: Colors.grey,
                         width: 0.5,
@@ -184,7 +195,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
                     ),
                     height: 40.0,
                     child: Text(
-                      '일',
+                      isImageAssigned ? '$day일' : '일',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
@@ -202,7 +213,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10.0),
-                      color: Colors.grey[400],
+                      color: isImageAssigned ? Colors.grey[800] : Colors.grey[400],
                       border: Border.all(
                         color: Colors.grey,
                         width: 0.5,
@@ -210,7 +221,7 @@ class _LoggedInPageState extends State<LoggedInPage> {
                     ),
                     height: 40.0,
                     child: Text(
-                      '년도',
+                      isImageAssigned ? year : '년도',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
@@ -240,11 +251,13 @@ class _LoggedInPageState extends State<LoggedInPage> {
                   width: 15.0,
                 ),
                 SizedBox(
-                  width: 6.0,
-                  child: Divider(
-                    color: Colors.black,
-                    thickness: 1.5,
-                  ),
+                  width: isImageAssigned ? (MediaQuery.of(context).size.width - 150.0) : 5.0,
+                  child: isImageAssigned
+                      ? Text('홍길동(HKD***@naver.com)')
+                      : Divider(
+                          color: Colors.black,
+                          thickness: 1.5,
+                        ),
                 ),
               ],
             ),
@@ -253,31 +266,58 @@ class _LoggedInPageState extends State<LoggedInPage> {
             height: 10.0,
           ),
           Expanded(
-            child: Container(
-              width: (MediaQuery.of(context).size.width) * 0.8,
-              decoration: BoxDecoration(
-                image: pickedImage != null
-                    ? DecorationImage(
-                        image: FileImage(pickedImage!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: pickedImage == null
-                  ? ElevatedButton(
-                      onPressed: () {
-                        _pickImage();
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(
+                  width: MediaQuery.of(context).size.width * 0.8 - 100,
+                  margin: EdgeInsets.symmetric(horizontal: 30),
+                  child: pickedImage != null
+                      ? Image.file(
+                          pickedImage!,
+                          fit: BoxFit.cover,
+                        )
+                      : ElevatedButton(
+                          onPressed: () {
+                            _pickImage();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[200],
+                            foregroundColor: Colors.grey,
+                          ),
+                          child: Icon(
+                            Icons.camera_alt_outlined,
+                            size: 80.0,
+                            color: Colors.grey,
+                          ),
+                        ),
+                ),
+                if (pickedImage != null)
+                  Positioned(
+                    top: 10,
+                    right: 40,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          pickedImage = null;
+                          isImageAssigned = false;
+                        });
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[200],
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        padding: EdgeInsets.all(6.0),
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.black87,
+                          size: 28.0,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.camera_alt_outlined,
-                        size: 80.0,
-                        color: Colors.grey,
-                      ),
-                    )
-                  : null,
+                    ),
+                  ),
+              ],
             ),
           ),
           isLoading ? const CircularProgressIndicator() : Container(),
