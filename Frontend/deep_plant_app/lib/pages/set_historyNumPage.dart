@@ -1,67 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:deep_plant_app/source/historyNum_Source.dart';
+import 'package:deep_plant_app/source/widgets.dart';
 
-class historyNumPage extends StatefulWidget {
-  const historyNumPage({super.key});
+class HistoryNumPage extends StatefulWidget {
+  const HistoryNumPage({super.key});
 
   @override
-  State<historyNumPage> createState() => _historyNumPageState();
+  State<HistoryNumPage> createState() => _HistoryNumPageState();
 }
 
-class _historyNumPageState extends State<historyNumPage> {
-  final orders = ['소', '돼지'];
-  final largeOrders_1 = ['안심', '등심', '채끝', '목심', '앞다리', '우둔', '설도', '양지', '사태', '갈비'];
+class _HistoryNumPageState extends State<HistoryNumPage> {
+  historyNum_Source source = historyNum_Source();
+  List<String>? largeData;
+  List<List<String>>? tableData;
 
-  final List<List<String>> tableData = [
-    ['안심살'],
-    ['윗등심살', '꽃등심살', '아래등심살', '살치살'],
-    ['채끝살'],
-    ['목심살'],
-    ['꾸리살', '부채살', '앞다리살', '갈비덧살', '부채덮개살'],
-    ['우둔살', '홍두깨살', '보섭살', '설깃살', '설깃머리살', '도가니살', '삼각살'],
-    ['안심살'],
-    ['양지머리', '차돌박이', '업진살', '업진안살', '치마양지', '치마살', '앞치마살'],
-    ['앞사태', '뒷사태', '뭉치사태', '아롱사태', '상박살'],
-    ['본갈비', '꽃갈비', '참갈비', '갈빗살', '마구리', '토시살', '안창살', '제비추리'],
-  ];
+  String? selectedOrder; // -> 소, 돼지의 실질적 텍스트
+  int orderNum = 0; // -> 소, 돼지의 편의적 정수
+  bool isselectedorder = false; // -> 완료 되었는지를 확인
 
-  String? selectedOrders;
-  int selectedorder = 0;
-  bool isselectedorder = false;
+  String? selectedLarge; // -> 선택된 종류에 대한 대분류 텍스트
+  int largeNum = 0; // -> 선택된 분류에 대한 편의적 수
+  bool isselectedlarge = false; // -> 완료 되었는지를 확인
 
-  String? selectedLarges;
-  int selectedlarge = 0;
-  bool isselectedlarge = false;
+  String? selectedLittle; // -> 선택된 종류에 대한 소분류 텍스트
+  int littleNum = 0; // -> 선택된 분류에 대한 편의적 수
 
-  String? selectedLittles;
-  int selectedlittle = 0;
+  String? finalNumber; // -> 모든 선택 이후에 만들게 될 텍스트
+  bool isFinal = false; // -> 모든 선택이 완료되었는지에 대한 분류
 
-  bool isFinal = false;
-
-  void setOrder(String order) {
-    if (order == '돼지') {
-      selectedorder = 1;
+  void setOrder(String order, Source) {
+    if (order == '소') {
+      orderNum = 0;
+      isselectedorder = true;
+      selectedLarge = null;
       isselectedlarge = false;
-      selectedlarge = 0;
-      selectedlittle = 0;
+      selectedLittle = null;
+      finalNumber = null;
       isFinal = false;
+      largeNum = 0;
+      littleNum = 0;
+      largeData = source.largeOrders_1;
+    } else if (order == '돼지') {
+      orderNum = 1;
+      isselectedorder = true;
+      selectedLarge = null;
+      isselectedlarge = false;
+      selectedLittle = null;
+      finalNumber = null;
+      isFinal = false;
+      largeNum = 0;
+      littleNum = 0;
+      largeData = source.largeOrders_2;
     }
   }
 
-  void setLarge(String large) {
-    for (int i = 0; i < 10; i++) {
-      if (large == largeOrders_1[i]) {
-        selectedlarge = i;
-        selectedLittles = null;
-        selectedlittle = 0;
+  void setLarge(String large, historyNum_Source source) {
+    for (int i = 0; i < largeData!.length; i++) {
+      if (large == largeData![i]) {
+        largeNum = i;
+        isselectedlarge = true;
+        selectedLittle = null;
+        finalNumber = null;
+        isFinal = false;
+        tableData = (orderNum == 0 ? source.tableData_1 : source.tableData_2);
+        littleNum = 0;
         break;
       }
     }
   }
 
-  void setLittle(String little) {
-    for (int i = 0; i < tableData[selectedlarge].length; i++) {
-      if (little == tableData[selectedlarge][i]) {
-        selectedlittle = i;
+  void setLittle(String little, historyNum_Source source) {
+    for (int i = 0; i < tableData!.length; i++) {
+      if (little == tableData![largeNum][i]) {
+        littleNum = i;
+        isFinal = true;
         break;
       }
     }
@@ -69,6 +81,12 @@ class _historyNumPageState extends State<historyNumPage> {
 
   @override
   Widget build(BuildContext context) {
+    List<String> orders = source.orders;
+    List<String> largeOrders_1 = source.largeOrders_1;
+    List<String> largeOrders_2 = source.largeOrders_2;
+    List<List<String>> tableData_1 = source.tableData_1;
+    List<List<String>> tableData_2 = source.tableData_2;
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -82,28 +100,11 @@ class _historyNumPageState extends State<historyNumPage> {
         backgroundColor: Colors.white,
         elevation: 0.0,
         foregroundColor: Colors.black,
-        leading: ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            elevation: 0.0,
-          ),
-          child: Icon(
-            Icons.arrow_back_ios,
-            color: Colors.black,
-          ),
-        ),
         actions: [
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              elevation: 0.0,
-            ),
-            child: Icon(
-              Icons.close,
-              color: Colors.black,
-            ),
+          elevated(
+            colorb: Colors.white,
+            colori: Colors.black,
+            icon: Icons.close,
           ),
         ],
       ),
@@ -177,7 +178,7 @@ class _historyNumPageState extends State<historyNumPage> {
                     isExpanded: true,
                     hint: Text('종류 선택'),
                     iconEnabledColor: Colors.grey[400],
-                    value: selectedOrders,
+                    value: selectedOrder,
                     items: orders
                         .map((e) => DropdownMenuItem(
                               value: e,
@@ -186,9 +187,8 @@ class _historyNumPageState extends State<historyNumPage> {
                         .toList(),
                     onChanged: (value) {
                       setState(() {
-                        selectedOrders = value!;
-                        isselectedorder = true;
-                        setOrder(selectedOrders!);
+                        selectedOrder = value!;
+                        setOrder(selectedOrder!, source);
                       });
                     },
                   ),
@@ -237,8 +237,8 @@ class _historyNumPageState extends State<historyNumPage> {
                       isExpanded: true,
                       hint: Text('대부위 선택'),
                       iconEnabledColor: Colors.grey[400],
-                      value: selectedLarges,
-                      items: largeOrders_1
+                      value: selectedLarge,
+                      items: (orderNum == 0 ? largeOrders_1 : largeOrders_2)
                           .map((e) => DropdownMenuItem(
                                 value: e,
                                 child: Center(child: Text(e)),
@@ -247,9 +247,8 @@ class _historyNumPageState extends State<historyNumPage> {
                       onChanged: isselectedorder
                           ? (value) {
                               setState(() {
-                                selectedLarges = value as String;
-                                setLarge(selectedLarges!);
-                                isselectedlarge = true;
+                                selectedLarge = value as String;
+                                setLarge(selectedLarge!, source);
                               });
                             }
                           : null),
@@ -280,8 +279,8 @@ class _historyNumPageState extends State<historyNumPage> {
                       isExpanded: true,
                       hint: Text('소부위 선택'),
                       iconEnabledColor: Colors.grey[400],
-                      value: selectedLittles,
-                      items: tableData[selectedlarge]
+                      value: selectedLittle,
+                      items: (orderNum == 0 ? tableData_1[largeNum] : tableData_2[largeNum])
                           .map((e) => DropdownMenuItem(
                                 value: e,
                                 child: Center(child: Text(e)),
@@ -290,9 +289,8 @@ class _historyNumPageState extends State<historyNumPage> {
                       onChanged: isselectedlarge
                           ? (value) {
                               setState(() {
-                                selectedLittles = value as String;
-                                isFinal = true;
-                                setLittle(selectedLittles!);
+                                selectedLittle = value as String;
+                                setLittle(selectedLittle!, source);
                               });
                             }
                           : null),
@@ -363,7 +361,7 @@ class _historyNumPageState extends State<historyNumPage> {
                       ),
                     ),
                     child: Text(
-                      '$selectedlarge$selectedlittle',
+                      '$largeNum$littleNum',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 20.0,
