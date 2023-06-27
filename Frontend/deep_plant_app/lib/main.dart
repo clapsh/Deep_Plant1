@@ -1,6 +1,7 @@
 import 'package:deep_plant_app/models/user_model.dart';
 import 'package:deep_plant_app/pages/sign-up/certification_page.dart';
 import 'package:deep_plant_app/pages/home_page.dart';
+import 'package:deep_plant_app/pages/sign-up/email_verification.dart';
 import 'package:deep_plant_app/pages/sign-up/insertion_idnpw.dart';
 import 'package:deep_plant_app/pages/logged_in_page.dart';
 import 'package:deep_plant_app/pages/sign_in_page.dart';
@@ -42,20 +43,20 @@ final _router = GoRouter(
                   ),
                   routes: [
                     GoRoute(
-                      path: ('succeed-sign-up'),
-                      builder: (context, state) => const SucceedSignUp(),
+                      path: ('email-verification'),
+                      builder: (context, state) => EmailVerification(),
                     ),
                   ],
                 ),
               ],
             ),
-            // GoRoute(
-            //   path: 'sign-up',
-            //   builder: (context, state) => const SignUp(),
-            // ),
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: ('/succeed-sign-up'),
+      builder: (context, state) => const SucceedSignUp(),
     ),
     GoRoute(
       path: '/logged-in',

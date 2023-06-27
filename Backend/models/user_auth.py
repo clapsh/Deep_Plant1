@@ -1,15 +1,23 @@
-from main import rds_db
+#import app
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-
-class UserAuth(UserMixin ,rds_db.Model):
-    id = rds_db.Column(rds_db.Integer, nullable = False ,unique=True, primary_key =True, autoincrement=True)
-    email = rds_db.Column(rds_db.String(100), nullable = False ,unique=True)
-    password_hash = rds_db.Column(rds_db.String(128))
-    name = rds_db.Column(rds_db.String(50), nullable = False )
-    grade = rds_db.Column(rds_db.Integer)
-    confirmed = rds_db.Column(rds_db.Boolean, default=False)
-    confirmation_token = rds_db.Column(rds_db.String(100))
+#import login_manager
+class UserAuth(UserMixin ):#,db.Model):
+    # id = db.Column(db.Integer, nullable = False ,unique=True, primary_key =True, autoincrement=True)
+    # email = db.Column(db.String(100), nullable = False ,unique=True)
+    # password_hash = db.Column(db.String(128))
+    # name = db.Column(db.String(50), nullable = False )
+    # grade = db.Column(db.Integer)
+    # confirmed = db.Column(db.Boolean, default=False)
+    # confirmation_token = db.Column(db.String(100))#, unique=True)
+    
+    # def __init__(self ,email, pw, name, grade):
+    #     self.email = email
+    #     self.pw = pw
+    #     self.name = name
+    #     self.grade = grade
+    #     self.confirmed = 0
+    #     self.confirmation_token = 'string'
         
     @property 
     def password(self):
