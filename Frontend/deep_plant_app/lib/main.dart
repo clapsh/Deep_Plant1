@@ -1,4 +1,10 @@
 import 'package:deep_plant_app/models/user_model.dart';
+import 'package:deep_plant_app/pages/get_history_number_page.dart';
+import 'package:deep_plant_app/pages/maet-registration/show_step_page.dart';
+import 'package:deep_plant_app/pages/my-page/edit_user_info_page.dart';
+import 'package:deep_plant_app/pages/my-page/my_page.dart';
+import 'package:deep_plant_app/pages/my-page/reset_pw_page.dart';
+import 'package:deep_plant_app/pages/option_page.dart';
 import 'package:deep_plant_app/pages/sign-up/certification_page.dart';
 import 'package:deep_plant_app/pages/home_page.dart';
 import 'package:deep_plant_app/pages/sign-up/email_verification.dart';
@@ -60,6 +66,38 @@ final _router = GoRouter(
       builder: (context, state) => const SucceedSignUp(),
     ),
     GoRoute(
+      path: '/option',
+      builder: (context, state) => OptionPage(),
+      routes: [
+        GoRoute(
+          path: 'my-page',
+          builder: (context, state) => MyPage(),
+          routes: [
+            GoRoute(
+              path: 'edit-info',
+              builder: (context, state) => EditUserInfo(),
+              routes: [
+                GoRoute(
+                  path: 'reset-pw',
+                  builder: (context, state) => ResetPW(),
+                ),
+              ],
+            ),
+          ],
+        ),
+        GoRoute(
+          path: 'show-step',
+          builder: (context, state) => ShowStep(),
+          routes: [
+            GoRoute(
+              path: 'insert-his-num',
+              builder: (context, state) => GetHistoryNumber(),
+            ),
+          ],
+        ),
+      ],
+    ),
+    GoRoute(
       path: '/logged-in',
       builder: (context, state) => const LoggedInPage(),
     ),
@@ -78,7 +116,8 @@ class MyApp extends StatelessWidget {
         // 기본 색상
         theme: ThemeData(
           primaryColor: const Color.fromRGBO(51, 51, 51, 1),
-          buttonTheme: const ButtonThemeData(buttonColor: Color.fromRGBO(51, 51, 51, 1)),
+          buttonTheme:
+              const ButtonThemeData(buttonColor: Color.fromRGBO(51, 51, 51, 1)),
         ),
         routerConfig: _router,
       ),

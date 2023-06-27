@@ -82,7 +82,7 @@ class _SignInState extends State<SignIn> {
 
     // 데이터 fetch 성공시 다음 페이지를 push
     Future.delayed(Duration.zero, () {
-      context.pushReplacement('/logged-in');
+      context.pushReplacement('/option');
     });
   }
 
@@ -270,13 +270,4 @@ class _SignInState extends State<SignIn> {
       ),
     );
   }
-}
-
-class UserInfo {
-  String id;
-  String pw;
-  UserInfo({
-    required this.id,
-    required this.pw,
-  });
 }
