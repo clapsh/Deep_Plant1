@@ -1,5 +1,4 @@
 from flask import Flask  # Flask Server import
-from routes import main  # Flask Server Routing pages
 
 import os  # Port Number assignment
 from apscheduler.schedulers.background import (
@@ -10,7 +9,7 @@ import s3_connect  # S3 Connect
 import keyId  # Key data in this Backend file
 from flask_sqlalchemy import SQLAlchemy  # For implement RDS database in server
 import db_config  # For implement RDS database in server
-from auth import auth
+from auth.auth import auth
  
 
 class MyFlaskApp:
@@ -18,14 +17,13 @@ class MyFlaskApp:
         self.app = Flask(__name__)
         
         # 1. Route Connection
-        self.app.register_blueprint(main)
         self.app.register_blueprint(auth, url_prefix="")
         # 2. RDS Config
         self.config = config
         self.app.config["SQLALCHEMY_DATABASE_URI"] = self._create_sqlalchemy_uri()
         self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
         self.db = SQLAlchemy(self.app)
-        #self.db.init_app(self.app)
+        
         # 3. Firebase Config
         self.firestore_conn = firebase_connect.FireBase_()
 
@@ -49,9 +47,8 @@ class MyFlaskApp:
 
     def run(self, host="0.0.0.0", port=8080):  # server 구동
         self.app.run(host=host, port=port)
-rds_db = SQLAlchemy()
 
-app = MyFlaskApp(db_config.config)
+myApp = MyFlaskApp(db_config.config)
 
 #Server 구동
 if __name__ == "__main__":

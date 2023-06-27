@@ -3,17 +3,12 @@ from flask import (
    flash, g, redirect, render_template, request, session, url_for
 )
 from flask_login import login_user, logout_user, login_required, current_user
-<<<<<<<< HEAD:Backend/auth_folder/auth.py
-from main import rds_db
-========
->>>>>>>> b3e86ca5e8b55556581a8b80e0f638c2616b158b:Backend/auth_folder/views.py
 from models.user_auth import UserAuth
 from sqlalchemy.exc import IntegrityError
 from .forms import SignupForm, LoginForm
 import auth
 # db연동 
-from main import app
-
+from main import myApp
 
 # 시작화면 : 로그인 페이지
 @auth.route('/', methods=['GET', 'POST'])
@@ -25,7 +20,7 @@ def confirm_email(token):
     user = UserAuth.query.filter_by(confirmation_token=token).first()
     if user:
         user.confirmed = True
-        app.db.session.commit()
+        myApp.db.session.commit()
         return 'Email confirmed successfully.'
     else:
         return 'Invalid token.'
@@ -43,8 +38,8 @@ def register():
             print("id :",ua.id)
             try:
                 # DB에 저장 및 로그인 화면으로 redirect
-                app.db.session.add(ua)
-                app.db.session.commit()
+                myApp.db.session.add(ua)
+                myApp.db.session.commit()
                 flash('가입되었습니다. 로그인 하세요.')
                 return redirect(url_for("auth.login"))
             except IntegrityError: 
@@ -52,7 +47,7 @@ def register():
                 print(ua)
                 print('password', ua.password_hash)
                 flash("규칙에 맞지 않는 데이터입니다.")
-                app.db.session.rollback()
+                myApp.db.session.rollback()
         # 중복 가입된 경우 (이름)
         else:
             flash('이미 등록된 사용자입니다.')
@@ -78,19 +73,6 @@ def login():
 
     return render_template('../auth/login.html', form = form)      
 
-<<<<<<<< HEAD:Backend/auth_folder/auth.py
-========
-# @bp.before_app_request # 어떤 url가 request되든지 view 함수 실행전에 함수 등록  -
-# def load_logged_in_user(): 
-#     user_id = session.get('user_id') # user id 가 session에 저장되어있는지 확인 
-    
-#     if user_id is None:
-#         g.user = None
-#     else: # 해당 user의 데이터를 db에서 가져와서 g.user에 저장 
-#         g.user = get_db().execute(
-#             'SELECT * FROM user WHERE id = ?', (user_id,)
-#         ).fetchone()
->>>>>>>> b3e86ca5e8b55556581a8b80e0f638c2616b158b:Backend/auth_folder/views.py
         
         
 # logout 하고 블로그 첫 화면으로 ('index') 
