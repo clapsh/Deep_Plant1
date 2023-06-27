@@ -14,6 +14,7 @@
 //
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class TextInsertionField extends StatelessWidget {
   final String? Function(String?)? validateFunc;
@@ -59,12 +60,12 @@ class TextInsertionField extends StatelessWidget {
                   )
                 : Text(mainText),
             filled: true,
-            fillColor: Colors.grey[200],
+            fillColor: Color(0xFFe8e8e8),
             hintText: hintText, // 입력 필드에 힌트로 표시될 텍스트
 
             suffixIcon: null, // 입력 필드 오른쪽에 표시될 아이콘
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(42.5.w),
               borderSide: BorderSide.none,
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16)),
