@@ -1,4 +1,6 @@
+import 'package:deep_plant_app/widgets/step_card.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ShowStep extends StatefulWidget {
   const ShowStep({super.key});
@@ -24,78 +26,23 @@ class _ShowStepState extends State<ShowStep> {
             SizedBox(
               height: 50,
             ),
-            Container(
-              padding: EdgeInsets.all(10),
-              width: 350,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(
-                  color: Color(0xFFE1E1E1),
-                  width: 3,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color.fromRGBO(0, 0, 0, 0.12),
-                    spreadRadius: 0,
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Color.fromRGBO(217, 217, 217, 1),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'STEP',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
-                          ),
-                        ),
-                        Text(
-                          '1',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: 30,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '육류 기본정보 입력',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(
-                        height: 5,
-                      ),
-                      Text('데이터를 입력해 주세요.'),
-                    ],
-                  ),
-                  Spacer(),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                  ),
-                ],
+            GestureDetector(
+              onTap: () => context.go('/option/show-step/insert-his-num'),
+              child: StepCard(
+                mainText: '육류 기본정보 입력',
+                subText: '데이터를 입력해 주세요.',
+                step: '1',
               ),
             ),
+            GestureDetector(
+              onTap: () => context.go('/logged-in'),
+              child: StepCard(
+                mainText: '육류 단면 촬영',
+                subText: '데이터를 입력해 주세요.',
+                step: '2',
+              ),
+            ),
+            StepCard(mainText: '신선육 관능평가', subText: '데이터를 입력해 주세요.', step: '3'),
           ],
         ),
       ),

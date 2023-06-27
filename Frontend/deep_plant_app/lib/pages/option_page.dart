@@ -57,7 +57,7 @@ class OptionPage extends StatelessWidget {
                 // 육류 등록 버튼
                 GestureDetector(
                   onTap: () {
-                    context.go('/option/insert-his-num');
+                    context.go('/option/show-step');
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(5.0),

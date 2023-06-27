@@ -1,4 +1,5 @@
 import 'package:deep_plant_app/models/user_model.dart';
+import 'package:deep_plant_app/pages/get_history_number_page.dart';
 import 'package:deep_plant_app/pages/maet-registration/show_step_page.dart';
 import 'package:deep_plant_app/pages/my-page/edit_user_info_page.dart';
 import 'package:deep_plant_app/pages/my-page/my_page.dart';
@@ -85,8 +86,14 @@ final _router = GoRouter(
           ],
         ),
         GoRoute(
-          path: 'insert-his-num',
+          path: 'show-step',
           builder: (context, state) => ShowStep(),
+          routes: [
+            GoRoute(
+              path: 'insert-his-num',
+              builder: (context, state) => GetHistoryNumber(),
+            ),
+          ],
         ),
       ],
     ),

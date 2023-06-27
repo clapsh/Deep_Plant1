@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:deep_plant_app/source/api_Source.dart';
 
-class ApiPage extends StatefulWidget {
-  const ApiPage({super.key});
+class GetHistoryNumber extends StatefulWidget {
+  const GetHistoryNumber({super.key});
 
   @override
-  State<ApiPage> createState() => _ApiPageState();
+  State<GetHistoryNumber> createState() => _GetHistoryNumberState();
 }
 
-class _ApiPageState extends State<ApiPage> {
-  var apikey = "58%2FAb40DJd41UCVYmCZM89EUoOWqT0vuObbReDQCI6ufjHIJbhZOUtQnftZErMQf6%2FgEflZVctg97VfdvvtmQw%3D%3D";
+class _GetHistoryNumberState extends State<GetHistoryNumber> {
+  var apikey =
+      "58%2FAb40DJd41UCVYmCZM89EUoOWqT0vuObbReDQCI6ufjHIJbhZOUtQnftZErMQf6%2FgEflZVctg97VfdvvtmQw%3D%3D";
   final _formkey = GlobalKey<FormState>();
   final TextEditingController _textEditingController = TextEditingController();
 
@@ -63,14 +64,19 @@ class _ApiPageState extends State<ApiPage> {
       final weatherData = await source.getJsonData();
 
       String totalcount = weatherData['response']['body']['pageNo'];
-      String basedate = weatherData['response']['body']['items']['item'][5]['baseDate'];
-      String basetime = weatherData['response']['body']['items']['item'][5]['baseTime'];
-      String obsrvalue = weatherData['response']['body']['items']['item'][5]['obsrValue'];
-      String category = weatherData['response']['body']['items']['item'][5]['category'];
+      String basedate =
+          weatherData['response']['body']['items']['item'][5]['baseDate'];
+      String basetime =
+          weatherData['response']['body']['items']['item'][5]['baseTime'];
+      String obsrvalue =
+          weatherData['response']['body']['items']['item'][5]['obsrValue'];
+      String category =
+          weatherData['response']['body']['items']['item'][5]['category'];
       String nxx = weatherData['response']['body']['items']['item'][5]['nx'];
       String nyy = weatherData['response']['body']['items']['item'][5]['ny'];
 
-      tableData.addAll([totalcount, basedate, basetime, obsrvalue, category, nxx, nyy]);
+      tableData.addAll(
+          [totalcount, basedate, basetime, obsrvalue, category, nxx, nyy]);
       isFinal = true;
     } catch (e) {
       tableData.clear();
@@ -145,22 +151,26 @@ class _ApiPageState extends State<ApiPage> {
                         },
                         decoration: InputDecoration(
                             enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(width: 0.5, color: Colors.grey),
+                                borderSide:
+                                    BorderSide(width: 0.5, color: Colors.grey),
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(25.0),
                                 )),
                             focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(width: 0.5, color: Colors.grey),
+                                borderSide:
+                                    BorderSide(width: 0.5, color: Colors.grey),
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(25.0),
                                 )),
                             errorBorder: OutlineInputBorder(
-                                borderSide: BorderSide(width: 0.5, color: Colors.grey),
+                                borderSide:
+                                    BorderSide(width: 0.5, color: Colors.grey),
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(25.0),
                                 )),
                             focusedErrorBorder: OutlineInputBorder(
-                                borderSide: BorderSide(width: 0.5, color: Colors.grey),
+                                borderSide:
+                                    BorderSide(width: 0.5, color: Colors.grey),
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(25.0),
                                 )),
