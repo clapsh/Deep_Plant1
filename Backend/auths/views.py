@@ -6,10 +6,9 @@ from flask_login import login_user, logout_user, login_required, current_user
 from models.user_auth import UserAuth
 from sqlalchemy.exc import IntegrityError
 from .forms import SignupForm, LoginForm
-import auth
+import auths as auth
 # db연동 
 from main import app
-
 
 # 시작화면 : 로그인 페이지
 @auth.route('/', methods=['GET', 'POST'])

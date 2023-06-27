@@ -10,7 +10,7 @@ import s3_connect  # S3 Connect
 import keyId  # Key data in this Backend file
 from flask_sqlalchemy import SQLAlchemy  # For implement RDS database in server
 import db_config  # For implement RDS database in server
-from auth import auth
+from auths import auth
  
 
 class MyFlaskApp:
@@ -18,7 +18,7 @@ class MyFlaskApp:
         self.app = Flask(__name__)
         
         # 1. Route Connection
-        self.app.register_blueprint(main)
+        #self.app.register_blueprint(main)
         self.app.register_blueprint(auth, url_prefix="")
         # 2. RDS Config
         self.config = config
