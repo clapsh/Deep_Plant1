@@ -4,18 +4,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:deep_plant_app/source/widgets.dart';
+import 'package:deep_plant_app/source/widget_source.dart';
 
-class LoggedInPage extends StatefulWidget {
-  const LoggedInPage({
+class InsertionCameraPage extends StatefulWidget {
+  const InsertionCameraPage({
     super.key,
   });
 
   @override
-  State<LoggedInPage> createState() => _LoggedInPageState();
+  State<InsertionCameraPage> createState() => _InsertionCameraPageState();
 }
 
-class _LoggedInPageState extends State<LoggedInPage> {
+class _InsertionCameraPageState extends State<InsertionCameraPage> {
   final _authentication = FirebaseAuth.instance;
   User? loggedUser;
   File? pickedImage;

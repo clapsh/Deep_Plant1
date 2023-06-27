@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:deep_plant_app/source/widgets.dart';
+import 'package:deep_plant_app/source/widget_source.dart';
 
-class QrPage extends StatefulWidget {
-  const QrPage({super.key});
+class GetQrPage extends StatefulWidget {
+  const GetQrPage({super.key});
 
   @override
-  State<QrPage> createState() => _QrPageState();
+  State<GetQrPage> createState() => _GetQrPageState();
 }
 
-class _QrPageState extends State<QrPage> {
+class _GetQrPageState extends State<GetQrPage> {
   // 이는 최종적인 결과를 저장한다. Barcode 클래스는 code와 format으로 이루어진다.
   // 당연히 format은 QR or barcode로 구분되며, code에는 결과, 즉 담긴 정보가 지정된다. (우리는 String, 일반적으로 url)
   Barcode? result;
