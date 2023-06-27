@@ -6,10 +6,11 @@ from flask_login import login_user, logout_user, login_required, current_user
 from models.user_auth import UserAuth
 from sqlalchemy.exc import IntegrityError
 from .forms import SignupForm, LoginForm
-import auth
 # db연동 
-from main import myApp
+from app import app # app = Flask() 객체
+from flask import Blueprint
 
+auth = Blueprint('auth', __name__, static_folder="static", template_folder="templates", static_url_path='static')
 # 시작화면 : 로그인 페이지
 @auth.route('/', methods=['GET', 'POST'])
 def index():
@@ -20,7 +21,7 @@ def confirm_email(token):
     user = UserAuth.query.filter_by(confirmation_token=token).first()
     if user:
         user.confirmed = True
-        myApp.db.session.commit()
+        app.app.db.session.commit()
         return 'Email confirmed successfully.'
     else:
         return 'Invalid token.'
@@ -38,8 +39,8 @@ def register():
             print("id :",ua.id)
             try:
                 # DB에 저장 및 로그인 화면으로 redirect
-                myApp.db.session.add(ua)
-                myApp.db.session.commit()
+                app.app.db.session.add(ua)
+                app.app.db.session.commit()
                 flash('가입되었습니다. 로그인 하세요.')
                 return redirect(url_for("auth.login"))
             except IntegrityError: 
@@ -47,7 +48,7 @@ def register():
                 print(ua)
                 print('password', ua.password_hash)
                 flash("규칙에 맞지 않는 데이터입니다.")
-                myApp.db.session.rollback()
+                app.app.db.session.rollback()
         # 중복 가입된 경우 (이름)
         else:
             flash('이미 등록된 사용자입니다.')

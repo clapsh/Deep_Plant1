@@ -7,3 +7,4 @@ pymysql
 Flask-WTF
 flask_login
 email_validator
+python-dotenv
