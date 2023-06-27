@@ -3,8 +3,7 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
 from flask_login import login_user, logout_user, login_required, current_user
-# db연동 
-from db_connect import rds_db
+from main import rds_db
 from models.user_auth import UserAuth
 from sqlalchemy.exc import IntegrityError
 from .forms import SignupForm, LoginForm
@@ -74,16 +73,6 @@ def login():
 
     return render_template('auth/login.html', form = form)
 
-@bp.before_app_request # 어떤 url가 request되든지 view 함수 실행전에 함수 등록  -
-def load_logged_in_user(): 
-    user_id = session.get('user_id') # user id 가 session에 저장되어있는지 확인 
-    
-    if user_id is None:
-        g.user = None
-    else: # 해당 user의 데이터를 db에서 가져와서 g.user에 저장 
-        g.user = get_db().execute(
-            'SELECT * FROM user WHERE id = ?', (user_id,)
-        ).fetchone()
         
         
 # logout 하고 블로그 첫 화면으로 ('index') 

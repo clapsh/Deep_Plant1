@@ -1,6 +1,6 @@
 from flask import Flask  # Flask Server import
 from routes import main  # Flask Server Routing pages
-import db_config  # RDS Configuration
+
 import os  # Port Number assignment
 from apscheduler.schedulers.background import (
     BackgroundScheduler,
@@ -48,27 +48,30 @@ class MyFlaskApp:
 
     def run(self, host="0.0.0.0", port=8080):  # server 구동
         self.app.run(host=host, port=port)
-
+rds_db = SQLAlchemy()
 
 #Server 구동
 if __name__ == "__main__":
-    app = MyFlaskApp(db_config.config)
+    myApp = MyFlaskApp(db_config.config)
+    from auth_folder.auth import bp# Flask Server Routing pages
+    myApp.app.register_blueprint(bp)
+    myApp.db.init_app(myApp)
     # 1. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
     scheduler = BackgroundScheduler(daemon=True, timezone="Asia/Seoul")
     scheduler.add_job(
-        app.firestore_conn.transferDbData, "interval", minutes=0.5
+        myApp.firestore_conn.transferDbData, "interval", minutes=0.5
     )  # 주기적 데이터 전송 firebase -> flask server
 
     # 2. Send data to S3 storage (Flask server(images folder) -> S3), 30sec
     scheduler.add_job(
-        app.s3_conn.transferImageData, "interval", minutes=0.5
+        myApp.s3_conn.transferImageData, "interval", minutes=0.5
     )  # 주기적 이미지 데이터 전송 flask server -> S3
 
     # 3. Send data to RDS (FireStore -> RDS), 30sec
     scheduler.add_job(
-        app.transfer_data_to_rds, "interval", minutes=0.5
+        myApp.transfer_data_to_rds, "interval", minutes=0.5
     )  # 주기적 Json Data 전송 flask server -> RDS
     scheduler.start()
 
     # 3. Flask 서버 실행
-    app.run()
+    myApp.run()

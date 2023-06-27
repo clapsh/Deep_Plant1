@@ -1,7 +1,7 @@
-from db_connect import rds_db
+from main import rds_db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from app import login_manager
+
 class UserAuth(UserMixin ,rds_db.Model):
     id = rds_db.Column(rds_db.Integer, nullable = False ,unique=True, primary_key =True, autoincrement=True)
     email = rds_db.Column(rds_db.String(100), nullable = False ,unique=True)
@@ -9,15 +9,7 @@ class UserAuth(UserMixin ,rds_db.Model):
     name = rds_db.Column(rds_db.String(50), nullable = False )
     grade = rds_db.Column(rds_db.Integer)
     confirmed = rds_db.Column(rds_db.Boolean, default=False)
-    confirmation_token = rds_db.Column(rds_db.String(100))#, unique=True)
-    
-    # def __init__(self ,email, pw, name, grade):
-    #     self.email = email
-    #     self.pw = pw
-    #     self.name = name
-    #     self.grade = grade
-    #     self.confirmed = 0
-    #     self.confirmation_token = 'string'
+    confirmation_token = rds_db.Column(rds_db.String(100))
         
     @property 
     def password(self):
@@ -30,7 +22,7 @@ class UserAuth(UserMixin ,rds_db.Model):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-@login_manager.user_loader
-def load_user(id):
-    print(id)
-    return UserAuth.query.get(int(id))  
+# @login_manager.user_loader
+# def load_user(id):
+#     print(id)
+#     return UserAuth.query.get(int(id))  
