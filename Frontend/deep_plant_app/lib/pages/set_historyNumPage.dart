@@ -384,6 +384,7 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                     onPressed: isFinal ? () => {} : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[800],
+                      disabledBackgroundColor: Colors.grey[400],
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10.0),
                       ),

@@ -89,27 +89,9 @@ class _ApiPageState extends State<ApiPage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.only(right: 20.0),
-          child: Text(
-            '육류등록',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
         backgroundColor: Colors.white,
         elevation: 0.0,
         foregroundColor: Colors.black,
-        leading: ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            elevation: 0.0,
-          ),
-          child: Icon(
-            Icons.arrow_back_ios,
-            color: Colors.black,
-          ),
-        ),
         actions: [
           ElevatedButton(
             onPressed: () {},
@@ -120,6 +102,7 @@ class _ApiPageState extends State<ApiPage> {
             child: Icon(
               Icons.close,
               color: Colors.black,
+              size: 35.0,
             ),
           ),
         ],
@@ -128,7 +111,6 @@ class _ApiPageState extends State<ApiPage> {
         onTap: () => FocusScope.of(context).unfocus(),
         child: Column(
           children: [
-            SizedBox(height: 45.0),
             Text(
               '이력번호 입력',
               style: TextStyle(
@@ -136,7 +118,7 @@ class _ApiPageState extends State<ApiPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 20.0),
+            SizedBox(height: 15.0),
             Row(
               children: [
                 Expanded(
@@ -148,7 +130,7 @@ class _ApiPageState extends State<ApiPage> {
                         controller: _textEditingController,
                         maxLength: 12,
                         validator: (value) {
-                          if (value!.isEmpty || value.length < 12) {
+                          if (value!.isEmpty || value.length < 8) {
                             // 임시 지정!!
                             return "유효하지 않습니다!";
                           } else {
@@ -226,14 +208,19 @@ class _ApiPageState extends State<ApiPage> {
               ],
             ),
             SizedBox(
-              height: isFinal ? 25.0 : 400.0,
+              height: 10.0,
               width: 350.0,
             ),
-            if (isFinal == true) Expanded(child: View(tableData: tableData, baseData: baseData)),
+            if (isFinal == true)
+              Expanded(child: View(tableData: tableData, baseData: baseData))
+            else
+              Spacer(
+                flex: 2,
+              ),
             Padding(
-              padding: const EdgeInsets.all(25.0),
+              padding: const EdgeInsets.all(20.0),
               child: Transform.translate(
-                offset: Offset(0, -25),
+                offset: Offset(0, 0),
                 child: SizedBox(
                   height: 55,
                   width: 350,
@@ -241,6 +228,7 @@ class _ApiPageState extends State<ApiPage> {
                     onPressed: isFinal ? () => {} : null,
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[800],
+                        disabledBackgroundColor: Colors.grey[400],
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10.0),
                         )),
