@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -36,7 +37,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         title,
         style: TextStyle(
           color: Colors.black,
-          fontWeight: FontWeight.bold,
+          fontSize: 36.sp,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w600,
+          height: 1.11.h, // line-height와 동일한 역할을 수행
         ),
       ),
       actions: close_button

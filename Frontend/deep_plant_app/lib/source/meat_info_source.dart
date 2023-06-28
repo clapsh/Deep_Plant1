@@ -1,4 +1,4 @@
-class historyNum_Source {
+class MeatInfoSource {
   final orders = ['소', '돼지'];
   final largeOrders_1 = ['안심', '등심', '채끝', '목심', '앞다리', '우둔', '설도', '양지', '사태', '갈비'];
   final largeOrders_2 = ['안심', '등심', '목심', '앞다리', '갈비', '삼겹살', '뒷다리'];

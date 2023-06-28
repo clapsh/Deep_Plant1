@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:deep_plant_app/source/historyNum_Source.dart';
-import 'package:deep_plant_app/source/widgets.dart';
+import 'package:deep_plant_app/source/meat_info_source.dart';
+import 'package:deep_plant_app/source/widget_source.dart';
 
-class HistoryNumPage extends StatefulWidget {
-  const HistoryNumPage({super.key});
+class InsertionMeatInfoPage extends StatefulWidget {
+  const InsertionMeatInfoPage({super.key});
 
   @override
-  State<HistoryNumPage> createState() => _HistoryNumPageState();
+  State<InsertionMeatInfoPage> createState() => _InsertionMeatInfoPageState();
 }
 
-class _HistoryNumPageState extends State<HistoryNumPage> {
-  historyNum_Source source = historyNum_Source();
+class _InsertionMeatInfoPageState extends State<InsertionMeatInfoPage> {
+  MeatInfoSource source = MeatInfoSource();
   List<String>? largeData;
   List<List<String>>? tableData;
 
@@ -54,7 +54,7 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
     }
   }
 
-  void setLarge(String large, historyNum_Source source) {
+  void setLarge(String large, MeatInfoSource source) {
     for (int i = 0; i < largeData!.length; i++) {
       if (large == largeData![i]) {
         largeNum = i;
@@ -69,7 +69,7 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
     }
   }
 
-  void setLittle(String little, historyNum_Source source) {
+  void setLittle(String little, MeatInfoSource source) {
     for (int i = 0; i < tableData!.length; i++) {
       if (little == tableData![largeNum][i]) {
         littleNum = i;
@@ -90,13 +90,6 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.only(right: 20.0),
-          child: Text(
-            '육류등록',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
         backgroundColor: Colors.white,
         elevation: 0.0,
         foregroundColor: Colors.black,
@@ -105,6 +98,7 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
             colorb: Colors.white,
             colori: Colors.black,
             icon: Icons.close,
+            size: 30.0,
           ),
         ],
       ),
@@ -114,21 +108,11 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              SizedBox(height: 45.0),
+              SizedBox(height: 5.0),
               Align(
                 alignment: Alignment.center,
                 child: Text(
-                  '관리번호 생성을 위한',
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: Text(
-                  '추가 정보를 입력해주세요',
+                  '육류 정보 입력',
                   style: TextStyle(
                     fontSize: 20.0,
                     fontWeight: FontWeight.bold,
@@ -136,7 +120,7 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                 ),
               ),
               SizedBox(
-                height: 60.0,
+                height: 100.0,
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 35.0),
@@ -169,11 +153,11 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                   padding: EdgeInsets.only(left: 15.0, right: 15.0),
                   child: DropdownButton(
                     padding: EdgeInsets.only(left: 25.0),
-                    underline: Container(),
                     alignment: Alignment.center,
                     elevation: 1,
-                    borderRadius: BorderRadius.circular(25.0),
-                    dropdownColor: Colors.grey[100],
+                    underline: Container(),
+                    borderRadius: BorderRadius.circular(10.0),
+                    dropdownColor: Colors.white,
                     iconSize: 25.0,
                     isExpanded: true,
                     hint: Text('종류 선택'),
@@ -182,7 +166,11 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                     items: orders
                         .map((e) => DropdownMenuItem(
                               value: e,
-                              child: Center(child: Text(e)),
+                              child: Center(
+                                  child: Text(
+                                e,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              )),
                             ))
                         .toList(),
                     onChanged: (value) {
@@ -232,8 +220,8 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                       menuMaxHeight: 250.0,
                       alignment: Alignment.center,
                       elevation: 1,
-                      borderRadius: BorderRadius.circular(25.0),
-                      dropdownColor: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(10.0),
+                      dropdownColor: Colors.white,
                       isExpanded: true,
                       hint: Text('대부위 선택'),
                       iconEnabledColor: Colors.grey[400],
@@ -241,7 +229,11 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                       items: (orderNum == 0 ? largeOrders_1 : largeOrders_2)
                           .map((e) => DropdownMenuItem(
                                 value: e,
-                                child: Center(child: Text(e)),
+                                child: Center(
+                                    child: Text(
+                                  e,
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                )),
                               ))
                           .toList(),
                       onChanged: isselectedorder
@@ -274,8 +266,8 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                       menuMaxHeight: 250.0,
                       alignment: Alignment.center,
                       elevation: 1,
-                      borderRadius: BorderRadius.circular(25.0),
-                      dropdownColor: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(10.0),
+                      dropdownColor: Colors.white,
                       isExpanded: true,
                       hint: Text('소부위 선택'),
                       iconEnabledColor: Colors.grey[400],
@@ -283,7 +275,11 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                       items: (orderNum == 0 ? tableData_1[largeNum] : tableData_2[largeNum])
                           .map((e) => DropdownMenuItem(
                                 value: e,
-                                child: Center(child: Text(e)),
+                                child: Center(
+                                    child: Text(
+                                  e,
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                )),
                               ))
                           .toList(),
                       onChanged: isselectedlarge
@@ -296,102 +292,30 @@ class _HistoryNumPageState extends State<HistoryNumPage> {
                           : null),
                 ),
               ),
-              SizedBox(
-                height: 30.0,
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 35.0),
-                child: Row(
-                  children: [
-                    Text(
-                      '관리번호',
-                      textAlign: TextAlign.start,
-                      style: TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 15.0,
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 160.0,
-                    height: 50.0,
-                    alignment: Alignment.center,
-                    margin: EdgeInsets.only(left: 30.0, right: 10.0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30.0),
-                      border: Border.all(
-                        color: Colors.black12,
-                        width: 3,
-                      ),
-                    ),
-                    child: Text(
-                      '202209191150',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black38,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 20.0,
-                    child: Divider(
-                      color: Colors.grey[400],
-                      thickness: 1.0,
-                    ),
-                  ),
-                  Container(
-                    width: 40.0,
-                    height: 50.0,
-                    alignment: Alignment.center,
-                    margin: EdgeInsets.only(left: 10.0, right: 10.0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30.0),
-                      border: Border.all(
-                        color: Colors.black12,
-                        width: 3,
-                      ),
-                    ),
-                    child: Text(
-                      '$largeNum$littleNum',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black38,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 15.0,
+              Spacer(
+                flex: 2,
               ),
               Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: SizedBox(
-                  height: 55,
-                  width: 350,
-                  child: ElevatedButton(
-                    onPressed: isFinal ? () => {} : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[800],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
+                child: Transform.translate(
+                  offset: Offset(0, 0),
+                  child: SizedBox(
+                    height: 55,
+                    width: 350,
+                    child: ElevatedButton(
+                      onPressed: isFinal ? () => {} : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[800],
+                        disabledBackgroundColor: Colors.grey[400],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
                       ),
+                      child: Text('다음'),
                     ),
-                    child: Text('다음'),
                   ),
                 ),
-              ),
+              )
             ],
           ),
         ),
