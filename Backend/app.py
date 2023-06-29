@@ -70,6 +70,7 @@ class MyFlaskApp:
         user1_data = self.firestore_conn.temp_user1_data
         user2_data = self.firestore_conn.temp_user2_data
         user3_data = self.firestore_conn.temp_user3_data
+
         with self.app.app_context():
             for key, value in meat_data.items():
                 try:
@@ -92,6 +93,7 @@ class MyFlaskApp:
                         lab_data=json.dumps(value.get("lab_data")),
                     )
                     rds_db.session.add(meat)
+                    self.firestore_conn.temp_meat_data = {}
                     print(f"Meat data added: {key} : {value}")
                 except Exception as e:
                     print(f"Error adding meat data: {e}")
@@ -109,6 +111,7 @@ class MyFlaskApp:
                         position=value.get("position"),
                     )
                     rds_db.session.add(user)
+                    self.firestore_conn.temp_user1_data = {}
                     print(f"User1 data added: {key} : {value}")
                 except Exception as e:
                     print(f"Error adding User1 data: {e}")
@@ -127,6 +130,7 @@ class MyFlaskApp:
                         revisionMeatList=data.get("revisionMeatList"),
                     )
                     rds_db.session.add(user)
+                    self.firestore_conn.temp_user2_data = {}
                     print(f"User2 data added: {key} : {value}")
                 except Exception as e:
                     print(f"Error adding User2 data: {e}")
@@ -144,6 +148,7 @@ class MyFlaskApp:
                         pwd=value.get("password"),
                     )
                     rds_db.session.add(user)
+                    self.firestore_conn.temp_user3_data = {}
                     print(f"User3 data added: {key} : {value}")
                 except Exception as e:
                     print(f"Error adding User3 data: {e}")
@@ -152,10 +157,10 @@ class MyFlaskApp:
             rds_db.session.commit()
 
         # 6. 초기화
-        self.firestore_conn.temp_meat_data = []
-        self.firestore_conn.temp_user1_data = []
-        self.firestore_conn.temp_user2_data = []
-        self.firestore_conn.temp_user3_data = []
+        
+        
+        
+        
         print(f"==================={datetime.now()}===================")
 
     def _get_meat_data(self):  # 전체 meat data 요청
