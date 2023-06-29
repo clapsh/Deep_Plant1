@@ -1,12 +1,14 @@
 import 'package:deep_plant_app/models/user_model.dart';
 import 'package:deep_plant_app/pages/sign-up/certification_page.dart';
 import 'package:deep_plant_app/pages/home_page.dart';
+import 'package:deep_plant_app/pages/sign-up/email_verification.dart';
 import 'package:deep_plant_app/pages/sign-up/insertion_idnpw.dart';
 import 'package:deep_plant_app/pages/logged_in_page.dart';
 import 'package:deep_plant_app/pages/sign_in_page.dart';
 import 'package:deep_plant_app/pages/sign-up/succeed_sign_up_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 void main() async {
@@ -42,20 +44,20 @@ final _router = GoRouter(
                   ),
                   routes: [
                     GoRoute(
-                      path: ('succeed-sign-up'),
-                      builder: (context, state) => const SucceedSignUp(),
+                      path: ('email-verification'),
+                      builder: (context, state) => EmailVerification(),
                     ),
                   ],
                 ),
               ],
             ),
-            // GoRoute(
-            //   path: 'sign-up',
-            //   builder: (context, state) => const SignUp(),
-            // ),
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: ('/succeed-sign-up'),
+      builder: (context, state) => const SucceedSignUp(),
     ),
     GoRoute(
       path: '/logged-in',
@@ -69,15 +71,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'DeepPlant-demo',
-      // 기본 색상
-      theme: ThemeData(
-        primaryColor: const Color.fromRGBO(51, 51, 51, 1),
-        buttonTheme:
-            const ButtonThemeData(buttonColor: Color.fromRGBO(51, 51, 51, 1)),
+    return ScreenUtilInit(
+      designSize: const Size(720, 1280),
+      builder: (context, child) => MaterialApp.router(
+        title: 'DeepPlant-demo',
+        // 기본 색상
+        theme: ThemeData(
+          primaryColor: const Color.fromRGBO(51, 51, 51, 1),
+          buttonTheme:
+              const ButtonThemeData(buttonColor: Color.fromRGBO(51, 51, 51, 1)),
+        ),
+        routerConfig: _router,
       ),
-      routerConfig: _router,
     );
   }
 }

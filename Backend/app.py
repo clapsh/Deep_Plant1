@@ -1,6 +1,4 @@
 from flask import Flask  # Flask Server import
-from routes import main  # Flask Server Routing pages
-import db_config  # RDS Configuration
 import os  # Port Number assignment
 from apscheduler.schedulers.background import (
     BackgroundScheduler,
@@ -10,26 +8,24 @@ import s3_connect  # S3 Connect
 import keyId  # Key data in this Backend file
 from flask_sqlalchemy import SQLAlchemy  # For implement RDS database in server
 import db_config  # For implement RDS database in server
-from auths import auth
- 
+from db_connect import rds_db # RDS Connect
 
+"""
+flask run --host=0.0.0.0 --port=8080
+"""
+ 
 class MyFlaskApp:
     def __init__(self, config):
         self.app = Flask(__name__)
-        
-        # 1. Route Connection
-        #self.app.register_blueprint(main)
-        self.app.register_blueprint(auth, url_prefix="")
-        # 2. RDS Config
+        # 1. RDS Config
         self.config = config
         self.app.config["SQLALCHEMY_DATABASE_URI"] = self._create_sqlalchemy_uri()
         self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        self.db = SQLAlchemy(self.app)
-        #self.db.init_app(self.app)
-        # 3. Firebase Config
+        
+        # 2. Firebase Config
         self.firestore_conn = firebase_connect.FireBase_()
 
-        # 4. S3 Database Config
+        # 3. S3 Database Config
         self.s3_conn = s3_connect.S3Bucket(keyId.s3_folder_name)
 
     def transfer_data_to_rds(self):
@@ -50,8 +46,14 @@ class MyFlaskApp:
     def run(self, host="0.0.0.0", port=8080):  # server 구동
         self.app.run(host=host, port=port)
 
+# Init RDS
+myApp = MyFlaskApp(db_config.config)
+app = myApp.app
+rds_db.init_app(app)
 
-app = MyFlaskApp(db_config.config)
+# Routing
+from auth.auth import auth
+app.register_blueprint(auth,url_prefix="")
 
 #Server 구동
 if __name__ == "__main__":
@@ -73,4 +75,4 @@ if __name__ == "__main__":
     scheduler.start()
 
     # 3. Flask 서버 실행
-    app.run()
+    app.run(host="0.0.0.0",port=8080)

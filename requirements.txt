@@ -4,3 +4,7 @@ firebase-admin
 boto3
 Flask-SQLAlchemy
 pymysql
+Flask-WTF
+flask_login
+email_validator
+python-dotenv

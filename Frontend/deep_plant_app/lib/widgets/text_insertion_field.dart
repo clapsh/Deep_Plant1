@@ -19,13 +19,14 @@ class TextInsertionField extends StatelessWidget {
   final String? Function(String?)? validateFunc;
   final void Function(String?)? onSaveFunc;
   final void Function(String?)? onChangeFunc;
-  String mainText;
-  String hintText;
-  double width;
-  bool isObscure;
-  bool isCenter;
+  final String mainText;
+  final String hintText;
+  final double width;
+  final bool isObscure;
+  final bool isCenter;
+  final TextEditingController? controller;
 
-  TextInsertionField({
+  const TextInsertionField({
     super.key,
     required this.validateFunc,
     required this.onSaveFunc,
@@ -35,6 +36,7 @@ class TextInsertionField extends StatelessWidget {
     required this.width,
     required this.isObscure,
     required this.isCenter,
+    this.controller,
   });
 
   @override
@@ -44,6 +46,7 @@ class TextInsertionField extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: width),
       margin: const EdgeInsets.symmetric(vertical: 3),
       child: TextFormField(
+        controller: controller,
         // 유효성 검사
         validator: validateFunc,
         onSaved: onSaveFunc,
