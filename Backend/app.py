@@ -46,7 +46,7 @@ class MyFlaskApp:
         # 3. S3 Database Config
         self.s3_conn = s3_connect.S3Bucket(keyId.s3_folder_name)
 
-        # 2. meat database 요청 Routing
+        # 4. meat database 요청 Routing
         @self.app.route("/meat", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
             return self._get_meat_data()
@@ -54,9 +54,14 @@ class MyFlaskApp:
         @self.app.route("/meat/<id>", methods=["GET"])  # 2. 특정 관리번호 meat data 요청
         def get_specific_meat_data(id):
             return self._get_specific_meat_data(id)
+        
+        # 5. user database 요청 Routiong
+        @self.app.route("/user/<id>",methods=["GET"]) # 1. 특정 유저 id의 유저 정보 요청
+        def get_specific_user_data(id):
+            return self._get_specific_user_data(id)
 
     def transfer_data_to_rds(self):
-        print("Trasfer DB Data [flask server -> RDS Database]", datetime.now())
+        print("Trasfer DB Data [flask server -> RDS Database]", datetime.now(),"\n")
         """
         Flask server -> RDS
         Firebase에서 새로 저장된 데이터들은 각각 다음의 변수에 저장됩니다.
@@ -93,17 +98,17 @@ class MyFlaskApp:
                         lab_data=json.dumps(value.get("lab_data")),
                     )
                     rds_db.session.add(meat)
-                    self.firestore_conn.temp_meat_data = {}
-                    print(f"Meat data added: {key} : {value}")
+                    print(f"Meat data added: {key} : {value}\n")
                 except Exception as e:
-                    print(f"Error adding meat data: {e}")
+                    print(f"Error adding meat data: {e}\n")
+            
 
             # 2. Update User1 data to RDS
 
             for key, value in user1_data.items():
                 try:
                     user = User1(
-                        id=value.get("id"),
+                        id=key,
                         meatList=value.get("meatList"),
                         lastLogin=value.get("lastLogin"),
                         name=value.get("name"),
@@ -111,17 +116,17 @@ class MyFlaskApp:
                         position=value.get("position"),
                     )
                     rds_db.session.add(user)
-                    self.firestore_conn.temp_user1_data = {}
-                    print(f"User1 data added: {key} : {value}")
+                    
+                    print(f"User1 data added: {key} : {value}\n")
                 except Exception as e:
-                    print(f"Error adding User1 data: {e}")
+                    print(f"Error adding User1 data: {e}\n")
 
             # 3. Update User2 data to RDS
 
             for data in user2_data.items():
                 try:
                     user = User2(
-                        id=data.get("id"),
+                        id=key,
                         meatList=data.get("meatList"),
                         lastLogin=data.get("lastLogin"),
                         name=data.get("name"),
@@ -130,17 +135,17 @@ class MyFlaskApp:
                         revisionMeatList=data.get("revisionMeatList"),
                     )
                     rds_db.session.add(user)
-                    self.firestore_conn.temp_user2_data = {}
-                    print(f"User2 data added: {key} : {value}")
+                    
+                    print(f"User2 data added: {key} : {value}\n")
                 except Exception as e:
-                    print(f"Error adding User2 data: {e}")
+                    print(f"Error adding User2 data: {e}\n")
 
             # 4. Update User3 data to RDS
 
             for key, value in user3_data.items():
                 try:
                     user = User3(
-                        id=value.get("id"),
+                        id=key,
                         lastLogin=value.get("lastLogin"),
                         name=value.get("name"),
                         company=value.get("company"),
@@ -148,20 +153,18 @@ class MyFlaskApp:
                         pwd=value.get("password"),
                     )
                     rds_db.session.add(user)
-                    self.firestore_conn.temp_user3_data = {}
-                    print(f"User3 data added: {key} : {value}")
+                    
+                    print(f"User3 data added: {key} : {value}\n")
                 except Exception as e:
-                    print(f"Error adding User3 data: {e}")
+                    print(f"Error adding User3 data: {e}\n")
 
             # 5. Session commit 완료
             rds_db.session.commit()
-
-        # 6. 초기화
-        
-        
-        
-        
-        print(f"==================={datetime.now()}===================")
+        self.firestore_conn.temp_meat_data = {}
+        self.firestore_conn.temp_user1_data = {}
+        self.firestore_conn.temp_user2_data = {}
+        self.firestore_conn.temp_user3_data = {}
+        print(f"===============================================\n")
 
     def _get_meat_data(self):  # 전체 meat data 요청
         with self.app.app_context():
@@ -237,6 +240,31 @@ class MyFlaskApp:
                     }
                 )
 
+    def _get_specific_user_data(self,id): # 특정 유저 id의 유저 정보 요청
+        with self.app.app_context():
+            #1. Fetch
+            user1_data = User1.query.filter_by(id=id).first()
+            user2_data = User2.query.filter_by(id=id).first()
+            user3_data = User3.query.filter_by(id=id).first()
+
+            #2. Init
+            result = {}
+
+            #3. add
+            if user1_data:
+                result["user1_data"] = self._to_dict(user1_data)
+
+            if user2_data:
+                result["user2_data"] = self._to_dict(user2_data)
+
+            if user3_data:
+                result["user3_data"] = self._to_dict(user3_data)
+
+            return jsonify(result)
+
+    def _to_dict(self, obj): # ditionary 생성 function
+        return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+    
     def _create_sqlalchemy_uri(self):  # uri 생성
         aws_db = self.config["aws_db"]
         return f"postgresql://{aws_db['user']}:{aws_db['password']}@{aws_db['host']}:{aws_db['port']}/{aws_db['database']}"
