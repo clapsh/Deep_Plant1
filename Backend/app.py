@@ -29,10 +29,6 @@ flask run --host=0.0.0.0 --port=8080
 class MyFlaskApp:
     def __init__(self, config):
         self.app = Flask(__name__)
-<<<<<<< HEAD
-=======
-
->>>>>>> upstream/main
         # 1. RDS Config
         self.config = config
         self.app.config["SQLALCHEMY_DATABASE_URI"] = self._create_sqlalchemy_uri()
@@ -319,8 +315,6 @@ if __name__ == "__main__":
     scheduler.start()
 
     # 3. Flask 서버 실행
-<<<<<<< HEAD
-    app.run(host="0.0.0.0",port=8080)
-=======
+
     myApp.run()
->>>>>>> upstream/main
+
