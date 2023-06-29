@@ -1,4 +1,4 @@
-from flask import Flask  # Flask Server import
+from flask import Flask, make_response  # Flask Server import
 import os  # Port Number assignment
 from apscheduler.schedulers.background import (
     BackgroundScheduler,
@@ -48,7 +48,10 @@ class MyFlaskApp:
         # 2. meat database 요청 Routing
         @self.app.route("/meat", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
-            return self._get_meat_data()
+            data = self._get_meat_data()
+            response = make_response(data)
+            response.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
+            return response
 
         @self.app.route("/meat/<id>", methods=["GET"])  # 2. 특정 관리번호 meat data 요청
         def get_specific_meat_data(id):

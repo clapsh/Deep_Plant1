@@ -4,17 +4,21 @@ import Meat from "./Meat";
 function DataLoad(){
     const [error, setError] = useState(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [items, setItems] = useState({});
+    const [items, setItems] = useState([]);
 
     const getData = async() => {
+        
         const json = await(
-            await fetch(
-                '/meat'
-               // `https://yts.mx/api/v2/list_movies.json?minimum_rating=9&sort_by=year`
-                )
+             await fetch(
+                'http://localhost:8080/meat'
+            )
         ).json();
-        setItems(json.data.movies);
+        console.log('connected!!');
+        console.log(json[0]);
+        setItems(json[0]);
         setIsLoaded(true);
+
+        
         /*const response = await (fetch('/meat').catch(handleError));
         if (response.ok){
             const json = await(response).json();
@@ -27,7 +31,13 @@ function DataLoad(){
             return Promise.reject(response);
         }*/
         /*
-        await fetch(`https://yts.mx/api/v2/list_movies.json?minimum_rating=9&sort_by=year`).then((response) => {
+        await fetch(
+            'http://localhost:8080/meat'
+            //`https://yts.mx/api/v2/list_movies.json?minimum_rating=9&sort_by=year`
+            ).then((response) => {
+                console.log("responses");
+                console.log(response);
+                
             // 네트워크 에러가 난 경우
             if (response.status >= 400 && response.status < 600) {
               throw new Error("Bad response from server");
@@ -36,7 +46,7 @@ function DataLoad(){
         }).then((returnedResponse) => {
            // response객체가 성공적으로 반환 된 경우
            console.log('success');
-           console.log(returnedResponse.data)
+           console.log(returnedResponse.json());
            const json = (returnedResponse.data.json());
            setItems(json);
             setIsLoaded(true);
@@ -45,8 +55,8 @@ function DataLoad(){
           console.warn(error);
           setIsLoaded(true);
           setError(error);
-        });*/
-        
+        });
+        */
     }
     
     useEffect(()=>{
