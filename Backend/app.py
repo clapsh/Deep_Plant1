@@ -19,6 +19,7 @@ from werkzeug.security import (
 import hashlib  # For password hashing
 from datetime import datetime  # 시간 출력용
 from flask import abort  # For data non existence
+from flask import make_response
 
 """
 flask run --host=0.0.0.0 --port=8080
@@ -49,19 +50,23 @@ class MyFlaskApp:
         # 4. meat database 요청 Routing
         @self.app.route("/meat", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
-            return self._get_meat_data()
+            return make_response(self._get_meat_data(), "http://localhost:3000")
 
         @self.app.route("/meat/<id>", methods=["GET"])  # 2. 특정 관리번호 meat data 요청
         def get_specific_meat_data(id):
-            return self._get_specific_meat_data(id)
-        
+            return make_response(
+                self._get_specific_meat_data(), "http://localhost:3000"
+            )
+
         # 5. user database 요청 Routiong
-        @self.app.route("/user/<id>",methods=["GET"]) # 1. 특정 유저 id의 유저 정보 요청
+        @self.app.route("/user/<id>", methods=["GET"])  # 1. 특정 유저 id의 유저 정보 요청
         def get_specific_user_data(id):
-            return self._get_specific_user_data(id)
+            return make_response(
+                self._get_specific_user_data(id), "http://localhost:3000"
+            )
 
     def transfer_data_to_rds(self):
-        print("Trasfer DB Data [flask server -> RDS Database]", datetime.now(),"\n")
+        print("Trasfer DB Data [flask server -> RDS Database]", datetime.now(), "\n")
         """
         Flask server -> RDS
         Firebase에서 새로 저장된 데이터들은 각각 다음의 변수에 저장됩니다.
@@ -101,7 +106,6 @@ class MyFlaskApp:
                     print(f"Meat data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding meat data: {e}\n")
-            
 
             # 2. Update User1 data to RDS
 
@@ -116,7 +120,7 @@ class MyFlaskApp:
                         position=value.get("position"),
                     )
                     rds_db.session.add(user)
-                    
+
                     print(f"User1 data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding User1 data: {e}\n")
@@ -135,7 +139,7 @@ class MyFlaskApp:
                         revisionMeatList=data.get("revisionMeatList"),
                     )
                     rds_db.session.add(user)
-                    
+
                     print(f"User2 data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding User2 data: {e}\n")
@@ -153,7 +157,7 @@ class MyFlaskApp:
                         pwd=value.get("password"),
                     )
                     rds_db.session.add(user)
-                    
+
                     print(f"User3 data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding User3 data: {e}\n")
@@ -240,17 +244,17 @@ class MyFlaskApp:
                     }
                 )
 
-    def _get_specific_user_data(self,id): # 특정 유저 id의 유저 정보 요청
+    def _get_specific_user_data(self, id):  # 특정 유저 id의 유저 정보 요청
         with self.app.app_context():
-            #1. Fetch
+            # 1. Fetch
             user1_data = User1.query.filter_by(id=id).first()
             user2_data = User2.query.filter_by(id=id).first()
             user3_data = User3.query.filter_by(id=id).first()
 
-            #2. Init
+            # 2. Init
             result = {}
 
-            #3. add
+            # 3. add
             if user1_data:
                 result["user1_data"] = self._to_dict(user1_data)
 
@@ -262,15 +266,21 @@ class MyFlaskApp:
 
             return jsonify(result)
 
-    def _to_dict(self, obj): # ditionary 생성 function
+    def _to_dict(self, obj):  # ditionary 생성 function
         return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
-    
+
     def _create_sqlalchemy_uri(self):  # uri 생성
         aws_db = self.config["aws_db"]
         return f"postgresql://{aws_db['user']}:{aws_db['password']}@{aws_db['host']}:{aws_db['port']}/{aws_db['database']}"
 
     def run(self, host="0.0.0.0", port=8080):  # server 구동
         self.app.run(host=host, port=port)
+
+
+def make_response(data, url):  # For making response
+    response = make_response(data)
+    response.headers["Access-Control-Allow-Origin"] = url
+    return response
 
 
 # Init RDS
