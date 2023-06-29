@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:deep_plant_app/source/api_Source.dart';
+import 'package:intl/intl.dart';
+import 'package:deep_plant_app/source/api_source.dart';
 
-class ApiPage extends StatefulWidget {
-  const ApiPage({super.key});
+class GetHistoryPage extends StatefulWidget {
+  const GetHistoryPage({super.key});
 
   @override
-  State<ApiPage> createState() => _ApiPageState();
+  State<GetHistoryPage> createState() => _GetHistoryPageState();
 }
 
-class _ApiPageState extends State<ApiPage> {
+class _GetHistoryPageState extends State<GetHistoryPage> {
   var apikey = "58%2FAb40DJd41UCVYmCZM89EUoOWqT0vuObbReDQCI6ufjHIJbhZOUtQnftZErMQf6%2FgEflZVctg97VfdvvtmQw%3D%3D";
   final _formkey = GlobalKey<FormState>();
   final TextEditingController _textEditingController = TextEditingController();
 
   bool isFinal = false;
   bool isValue = false;
-  int historyNum = 0;
+  String? historyNum;
 
   final List<String> tableData = [];
 
@@ -24,9 +25,10 @@ class _ApiPageState extends State<ApiPage> {
     '농장',
     '도축장',
     '도축일자',
-    '육류종류',
+    '육종/축종',
     '성별',
     '등급',
+    '출생년월일',
   ];
 
   @override
@@ -46,41 +48,31 @@ class _ApiPageState extends State<ApiPage> {
     }
   }
 
-  Future<void> fetchData(int historyNum) async {
-    var pageNo = "1";
-    var numOfRows = "10";
-    var baseDate = "$historyNum";
-    var baseTime = "0600";
-    var nx = "55";
-    var ny = "127";
+  Future<void> fetchData(String historyNum) async {
+    var traceNo = historyNum;
     tableData.clear();
 
     try {
-      Source source = Source(
-          baseUrl:
-              "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=$apikey&numOfRows=$numOfRows&pageNo=$pageNo&base_date=$baseDate&base_time=$baseTime&nx=$nx&ny=$ny");
+      ApiSource source = ApiSource(baseUrl: "http://data.ekape.or.kr/openapi-data/service/user/animalTrace/traceNoSearch?serviceKey=$apikey&traceNo=$traceNo");
 
-      final weatherData = await source.getJsonData();
+      final meatData = await source.getJsonData();
 
-      String totalcount = weatherData['response']['body']['pageNo'];
-      String basedate = weatherData['response']['body']['items']['item'][5]['baseDate'];
-      String basetime = weatherData['response']['body']['items']['item'][5]['baseTime'];
-      String obsrvalue = weatherData['response']['body']['items']['item'][5]['obsrValue'];
-      String category = weatherData['response']['body']['items']['item'][5]['category'];
-      String nxx = weatherData['response']['body']['items']['item'][5]['nx'];
-      String nyy = weatherData['response']['body']['items']['item'][5]['ny'];
+      String farmAdd = meatData['response']['body']['items']['item'][1]['farmAddr'];
+      String houseName = meatData['response']['body']['items']['item'][4]['butcheryPlaceNm'];
+      String basetime = meatData['response']['body']['items']['item'][4]['butcheryYmd'];
+      String basetime_resolve = DateFormat('yyyy-MM-dd').format(DateTime.parse(basetime)).toString();
+      String breeding = meatData['response']['body']['items']['item'][0]['lsTypeNm'];
+      String gender = meatData['response']['body']['items']['item'][0]['sexNm'];
+      String grade = meatData['response']['body']['items']['item'][4]['gradeNm'];
+      String birth = meatData['response']['body']['items']['item'][0]['birthYmd'];
+      String birth_resolve = DateFormat('yyyy-MM-dd').format(DateTime.parse(birth)).toString();
 
-      tableData.addAll([totalcount, basedate, basetime, obsrvalue, category, nxx, nyy]);
+      tableData.addAll([traceNo, farmAdd, houseName, basetime_resolve, breeding, gender, grade, birth_resolve]);
       isFinal = true;
     } catch (e) {
       tableData.clear();
       isFinal = false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('이력번호가 잘못되었습니다!'),
-          backgroundColor: Colors.yellow,
-        ),
-      );
+      // 여기에 다이얼로그로 수정!!
     }
   }
 
@@ -89,27 +81,9 @@ class _ApiPageState extends State<ApiPage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.only(right: 20.0),
-          child: Text(
-            '육류등록',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
         backgroundColor: Colors.white,
         elevation: 0.0,
         foregroundColor: Colors.black,
-        leading: ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            elevation: 0.0,
-          ),
-          child: Icon(
-            Icons.arrow_back_ios,
-            color: Colors.black,
-          ),
-        ),
         actions: [
           ElevatedButton(
             onPressed: () {},
@@ -120,6 +94,7 @@ class _ApiPageState extends State<ApiPage> {
             child: Icon(
               Icons.close,
               color: Colors.black,
+              size: 35.0,
             ),
           ),
         ],
@@ -128,7 +103,6 @@ class _ApiPageState extends State<ApiPage> {
         onTap: () => FocusScope.of(context).unfocus(),
         child: Column(
           children: [
-            SizedBox(height: 45.0),
             Text(
               '이력번호 입력',
               style: TextStyle(
@@ -136,7 +110,7 @@ class _ApiPageState extends State<ApiPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 20.0),
+            SizedBox(height: 5.0),
             Row(
               children: [
                 Expanded(
@@ -156,10 +130,10 @@ class _ApiPageState extends State<ApiPage> {
                           }
                         },
                         onSaved: (value) {
-                          historyNum = int.parse(value!);
+                          historyNum = value!;
                         },
                         onChanged: (value) {
-                          historyNum = int.parse(value);
+                          historyNum = value;
                         },
                         decoration: InputDecoration(
                             enabledBorder: OutlineInputBorder(
@@ -202,7 +176,7 @@ class _ApiPageState extends State<ApiPage> {
                           tableData.clear();
                           _tryValidation();
                           if (isValue) {
-                            await fetchData(historyNum);
+                            await fetchData(historyNum!);
                           }
                           setState(() {
                             FocusScope.of(context).unfocus();
@@ -226,14 +200,19 @@ class _ApiPageState extends State<ApiPage> {
               ],
             ),
             SizedBox(
-              height: isFinal ? 25.0 : 400.0,
+              height: 5.0,
               width: 350.0,
             ),
-            if (isFinal == true) Expanded(child: View(tableData: tableData, baseData: baseData)),
+            if (isFinal == true)
+              Expanded(child: View(tableData: tableData, baseData: baseData))
+            else
+              Spacer(
+                flex: 2,
+              ),
             Padding(
-              padding: const EdgeInsets.all(25.0),
+              padding: const EdgeInsets.all(15.0),
               child: Transform.translate(
-                offset: Offset(0, -25),
+                offset: Offset(0, 0),
                 child: SizedBox(
                   height: 55,
                   width: 350,
@@ -241,6 +220,7 @@ class _ApiPageState extends State<ApiPage> {
                     onPressed: isFinal ? () => {} : null,
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[800],
+                        disabledBackgroundColor: Colors.grey[400],
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10.0),
                         )),
@@ -290,7 +270,7 @@ class View extends StatelessWidget {
                         text: TextSpan(children: [
                           WidgetSpan(
                             child: SizedBox(
-                              width: 15,
+                              width: 10,
                             ),
                           ),
                           TextSpan(

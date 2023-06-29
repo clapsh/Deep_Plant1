@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deep_plant_app/models/user_model.dart';
+import 'package:deep_plant_app/widgets/common_button.dart';
 import 'package:deep_plant_app/widgets/text_insertion_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -381,28 +382,11 @@ class _InsertionIdnPwState extends State<InsertionIdnPw> {
                                       horizontal: 16)),
                             ),
                           ),
-                          SizedBox(
+                          CommonButton(
+                            text: '검색',
+                            onPress: () {},
                             width: 100,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.only(
-                                    topRight: Radius.circular(30),
-                                    bottomRight: Radius.circular(30),
-                                  ),
-                                ),
-                              ),
-                              child: const Text(
-                                '검색',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
+                            height: 45,
                           ),
                         ],
                       ),

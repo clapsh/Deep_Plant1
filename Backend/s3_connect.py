@@ -1,6 +1,7 @@
 import boto3  # S3 Server connection
 import keyId  # Key 저장
 import os
+from datetime import datetime # 시간 출력용
 
 IMAGE_FOLDER_PATH = "./images/"
 
@@ -22,6 +23,7 @@ class S3Bucket:
             print("S3 Bucket Connected!")
 
     def transferImageData(self):  # flask server -> S3 Database
+        print("Trasfer Image Data [flask server -> S3 Database]",datetime.now())
         for filename in os.listdir(IMAGE_FOLDER_PATH):
             if filename.endswith(".png"):
                 filepath = os.path.join(IMAGE_FOLDER_PATH, filename)

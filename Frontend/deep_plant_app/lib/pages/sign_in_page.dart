@@ -1,6 +1,7 @@
 import 'package:deep_plant_app/widgets/text_insertion_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 class SignIn extends StatefulWidget {
@@ -82,7 +83,7 @@ class _SignInState extends State<SignIn> {
 
     // 데이터 fetch 성공시 다음 페이지를 push
     Future.delayed(Duration.zero, () {
-      context.pushReplacement('/logged-in');
+      context.pushReplacement('/option');
     });
   }
 
@@ -102,26 +103,28 @@ class _SignInState extends State<SignIn> {
                 children: [
                   Padding(
                     // 딥플랜트 로고 이미지
-                    padding: const EdgeInsets.only(bottom: 5),
+                    padding: const EdgeInsets.all(0),
                     child: ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                          Colors.black, BlendMode.modulate),
+                      colorFilter: const ColorFilter.mode(Colors.black, BlendMode.modulate),
                       child: Image.asset(
                         'assets/images/logo.png',
-                        width: 300,
-                        height: 60,
+                        width: 111.w,
+                        height: 111.w,
                       ),
                     ),
                   ),
                   const Text(
                     '딥에이징',
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      fontSize: 48,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w500,
+                      height: 1.0,
                     ),
                   ),
                   const SizedBox(
-                    height: 60,
+                    height: 68,
                   ),
                   // 아이디 입력 필드
                   TextInsertionField(
@@ -191,9 +194,7 @@ class _SignInState extends State<SignIn> {
                       borderRadius: BorderRadius.circular(30),
                       underline: Container(
                         decoration: const BoxDecoration(
-                          border: Border(
-                              bottom: BorderSide(
-                                  color: Colors.transparent, width: 0)),
+                          border: Border(bottom: BorderSide(color: Colors.transparent, width: 0)),
                         ),
                       ),
                       icon: const Icon(
@@ -270,13 +271,4 @@ class _SignInState extends State<SignIn> {
       ),
     );
   }
-}
-
-class UserInfo {
-  String id;
-  String pw;
-  UserInfo({
-    required this.id,
-    required this.pw,
-  });
 }

@@ -1,5 +1,6 @@
 from flask import send_file
 import firebase_admin  # Firestore init
+from datetime import datetime # 시간 출력용
 from firebase_admin import firestore, storage
 import keyId
 import io
@@ -34,6 +35,7 @@ class FireBase_:
         print(f"transfer meat data: {self.temp_meat_data}")
 
     def transferDbData(self):
+        print("Trasfer DB&Image Data [Firebase -> Flask Server]",datetime.now())
         # 1. 바뀐 데이터 확인
         self.firestoreCheck()
 
