@@ -24,27 +24,27 @@ class Meat(rds_db.Model):
 
 class User1(rds_db.Model):
     id = rds_db.Column(rds_db.String, primary_key=True)
-    meatList = rds_db.Column(rds_db.String)
-    lastLogin = rds_db.Column(rds_db.String)
-    name = rds_db.Column(rds_db.String)
-    company = rds_db.Column(rds_db.String)
-    position = rds_db.Column(rds_db.String)
+    meatList = rds_db.Column(rds_db.String,nullable=True)
+    lastLogin = rds_db.Column(rds_db.String,nullable=False)
+    name = rds_db.Column(rds_db.String,nullable=False)
+    company = rds_db.Column(rds_db.String,nullable=True)
+    position = rds_db.Column(rds_db.String,nullable=True)
 
 
 class User2(rds_db.Model):
     id = rds_db.Column(rds_db.String, primary_key=True)
-    meatList = rds_db.Column(rds_db.String)
-    lastLogin = rds_db.Column(rds_db.String)
-    name = rds_db.Column(rds_db.String)
-    company = rds_db.Column(rds_db.String)
-    position = rds_db.Column(rds_db.String)
-    revisionMeatList = rds_db.Column(rds_db.String)
+    meatList = rds_db.Column(rds_db.String,nullable=True)
+    lastLogin = rds_db.Column(rds_db.String,nullable=False)
+    name = rds_db.Column(rds_db.String,nullable=False)
+    company = rds_db.Column(rds_db.String,nullable=True)
+    position = rds_db.Column(rds_db.String,nullable=True)
+    revisionMeatList = rds_db.Column(rds_db.String,nullable=True)
 
 
 class User3(rds_db.Model):
     id = rds_db.Column(rds_db.String, primary_key=True)
-    lastLogin = rds_db.Column(rds_db.String)
-    name = rds_db.Column(rds_db.String)
-    company = rds_db.Column(rds_db.String)
-    position = rds_db.Column(rds_db.String)
-    pwd = rds_db.Column(rds_db.String) # 암호화 완료
+    lastLogin = rds_db.Column(rds_db.String,nullable=False)
+    name = rds_db.Column(rds_db.String,nullable=False)
+    company = rds_db.Column(rds_db.String,nullable=True)
+    position = rds_db.Column(rds_db.String,nullable=True)
+    pwd = rds_db.Column(rds_db.String,nullable=False) # 암호화 완료
