@@ -31,11 +31,18 @@ class MyFlaskApp:
         self.app.config["SQLALCHEMY_DATABASE_URI"] = self._create_sqlalchemy_uri()
         self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+        # Init RDS
+        rds_db.init_app(self.app)
+        with self.app.app_context():
+            rds_db.create_all()  # This will create tables according to the models
+
         # 2. Firebase Config
         self.firestore_conn = firebase_connect.FireBase_()
 
         # 3. S3 Database Config
         self.s3_conn = s3_connect.S3Bucket(keyId.s3_folder_name)
+
+        
 
     def transfer_data_to_rds(self):
         print("Trasfer DB Data [flask server -> RDS Database]",datetime.now())
@@ -53,44 +60,53 @@ class MyFlaskApp:
         user2_data = self.firestore_conn.temp_user2_data
         user3_data = self.firestore_conn.temp_user3_data
         with self.app.app_context():
-            for data in meat_data:
-                meat = Meat(
-                    id=data.get("id"),
-                    email=data.get("email"),
-                    saveTime=data.get("saveTime"),
-                    traceNumber=data.get("traceNumber"),
-                    species=data.get("species"),
-                    l_division=data.get("l_division"),
-                    s_division=data.get("s_division"),
-                    gradeNm=data.get("gradeNm"),
-                    farmAddr=data.get("farmAddr"),
-                    butcheryPlaceNm=data.get("butcheryPlaceNm"),
-                    butcheryYmd=data.get("butcheryYmd"),
-                    deepAging=json.dumps(data.get("deepAging")),
-                    fresh=json.dumps(data.get("fresh")),
-                    heated=json.dumps(data.get("heated")),
-                    tongue=json.dumps(data.get("tongue")),
-                    lab_data=json.dumps(data.get("lab_data")),
-                )
-                rds_db.session.add(meat)
+            for key,value in meat_data.items():
+                try:
+                    meat = Meat(
+                    id=key,
+                    email=value.get("email"),
+                    saveTime=value.get("saveTime"),
+                    traceNumber=value.get("traceNumber"),
+                    species=value.get("species"),
+                    l_division=value.get("l_division"),
+                    s_division=value.get("s_division"),
+                    gradeNm=value.get("gradeNm"),
+                    farmAddr=value.get("farmAddr"),
+                    butcheryPlaceNm=value.get("butcheryPlaceNm"),
+                    butcheryYmd=value.get("butcheryYmd"),
+                    deepAging=json.dumps(value.get("deepAging")),
+                    fresh=json.dumps(value.get("fresh")),
+                    heated=json.dumps(value.get("heated")),
+                    tongue=json.dumps(value.get("tongue")),
+                    lab_data=json.dumps(value.get("lab_data")),
+                    )
+                    rds_db.session.add(meat)
+                    print(f"Meat data added: {key} : {value}")
+                except Exception as e:
+                    print(f"Error adding meat data: {e}")
 
             # 2. Update User1 data to RDS
             
-            for data in user1_data:
-                user = User1(
-                    id=data.get("id"),
-                    meatList=data.get("meatList"),
-                    lastLogin=data.get("lastLogin"),
-                    name=data.get("name"),
-                    company=data.get("company"),
-                    position=data.get("position"),
-                )
-                rds_db.session.add(user)
+            for key,value in user1_data.items():
+                try:
+                    user = User1(
+                    id=value.get("id"),
+                    meatList=value.get("meatList"),
+                    lastLogin=value.get("lastLogin"),
+                    name=value.get("name"),
+                    company=value.get("company"),
+                    position=value.get("position"),
+                    )
+                    rds_db.session.add(user)
+                    print(f"User1 data added: {key} : {value}")
+                except Exception as e:
+                    print(f"Error adding User1 data: {e}")
 
             # 3. Update User2 data to RDS
             
-            for data in user2_data:
-                user = User2(
+            for data in user2_data.items():
+                try:
+                    user = User2(
                     id=data.get("id"),
                     meatList=data.get("meatList"),
                     lastLogin=data.get("lastLogin"),
@@ -98,28 +114,35 @@ class MyFlaskApp:
                     company=data.get("company"),
                     position=data.get("position"),
                     revisionMeatList=data.get("revisionMeatList"),
-                )
-                rds_db.session.add(user)
+                    )
+                    rds_db.session.add(user)
+                    print(f"User2 data added: {key} : {value}")
+                except Exception as e:
+                    print(f"Error adding User2 data: {e}")
 
             # 4. Update User3 data to RDS
             
-            for data in user3_data:
-                user = User3(
-                    id=data.get("id"),
-                    lastLogin=data.get("lastLogin"),
-                    name=data.get("name"),
-                    company=data.get("company"),
-                    position=data.get("company"),
-                    pwd = data.get("password"),
-                )
-                rds_db.session.add(user)
+            for key,value in user3_data.items():
+                try:
+                    user = User3(
+                    id=value.get("id"),
+                    lastLogin=value.get("lastLogin"),
+                    name=value.get("name"),
+                    company=value.get("company"),
+                    position=value.get("position"),
+                    pwd = value.get("password"),
+                    )
+                    rds_db.session.add(user)
+                    print(f"User3 data added: {key} : {value}")
+                except Exception as e:
+                    print(f"Error adding User3 data: {e}")
 
             # 5. Session commit 완료
             rds_db.session.commit()
 
     def _create_sqlalchemy_uri(self):  # uri 생성
         aws_db = self.config["aws_db"]
-        return f"mysql+pymysql://{aws_db['user']}:{aws_db['password']}@{aws_db['host']}:{aws_db['port']}/{aws_db['database']}?charset=utf8"
+        return f"postgresql://{aws_db['user']}:{aws_db['password']}@{aws_db['host']}:{aws_db['port']}/{aws_db['database']}"
 
     def run(self, host="0.0.0.0", port=8080):  # server 구동
         self.app.run(host=host, port=port)
@@ -127,7 +150,6 @@ class MyFlaskApp:
 
 # Init RDS
 myApp = MyFlaskApp(db_config.config)
-rds_db.init_app(myApp.app)
 
 # Routing
 
@@ -163,6 +185,7 @@ def logout():
     return jsonify({"message": "Logged out successfully"}), 200
 
 
+
 # Server 구동
 if __name__ == "__main__":
     # 1. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
@@ -178,7 +201,7 @@ if __name__ == "__main__":
 
     # 3. Send data to RDS (FireStore -> RDS), 30sec
     scheduler.add_job(
-        myApp.transfer_data_to_rds, "interval", minutes=0.5
+        myApp.transfer_data_to_rds, "interval", minutes=0.6
     )  # 주기적 Json Data 전송 flask server -> RDS
     scheduler.start()
 

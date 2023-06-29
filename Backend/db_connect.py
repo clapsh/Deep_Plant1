@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
-
+from sqlalchemy import create_engine
+from sqlalchemy.pool import Pool
 rds_db = SQLAlchemy()
-
 
 class Meat(rds_db.Model):
     id = rds_db.Column(rds_db.String, primary_key=True) 
