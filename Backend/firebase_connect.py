@@ -72,7 +72,7 @@ class FireBase_:
         self.fix_data_state = doc_ref.get().to_dict()
 
         # 2. 바뀐 데이터 수합했으면 비워야 한다.
-        #doc_ref.update({"fix_data":{"users_1": [], "users_2": [], "users_3": [], "meat": []}})
+        doc_ref.update({"fix_data":{"users_1": [], "users_2": [], "users_3": [], "meat": []}})
 
     def firestore2server(
         self, collection
