@@ -21,11 +21,13 @@ from datetime import datetime  # 시간 출력용
 from flask import abort  # For data non existence
 from flask import make_response  # For making response in flask
 from werkzeug.exceptions import BadRequest  # For making Error response
+from werkzeug.utils import secure_filename  # For checking file name from react page
 
 """
 flask run --host=0.0.0.0 --port=8080
  ~/.pyenv/versions/deep_plant_backend/bin/python app.py
 """
+UPDATE_IMAGE_FOLDER_PATH = "./update_images/"
 
 
 class MyFlaskApp:
@@ -50,26 +52,54 @@ class MyFlaskApp:
         # 4. meat database 요청 Routing
         @self.app.route("/meat", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
-            return _make_response(self._get_meat_data(), "http://localhost:3000")
+            id = request.args.get("id")
+            if id:
+                return _make_response(
+                    self._get_specific_meat_data(id), "http://localhost:3000"
+                )
+            else:
+                return _make_response(self._get_meat_data(), "http://localhost:3000")
 
-        @self.app.route("/meat/<id>", methods=["GET"])  # 2. 특정 관리번호 meat data 요청
-        def get_specific_meat_data(id):
-            return _make_response(
-                self._get_specific_meat_data(id), "http://localhost:3000"
-            )
+        @self.app.route("/meat/update", methods=["POST"])  # 3. 특정 육류 데이터 수정(db data만)
+        def update_specific_meat_data():
+            id = request.args.get("id")
+            if id:
+                return _make_response(
+                    self._update_specific_meat_data(id), "http://localhost:3000"
+                )
+            else:
+                abort(400, description="No id Provided for update data")
 
-        @self.app.route("/meat/<id>/update", methods=["POST"])
-        def update_specific_meat_data(id):
-            return _make_response(
-                self._update_specific_meat_data(id), "http://localhost:3000"
-            )
+        @self.app.route("/meat/upload_image", methods=["POST"])  # 4. 특정 육류 이미지 데이터 수정
+        def update_specific_meat_image():
+            id = request.args.get("id")
+            if id:
+                return _make_response(
+                    self._update_specific_meat_image(id), "http://localhost:3000"
+                )
+            else:
+                abort(400, description="No id Provided for upload image")
 
         # 5. user database 요청 Routiong
-        @self.app.route("/user/<id>", methods=["GET"])  # 1. 특정 유저 id의 유저 정보 요청
-        def get_specific_user_data(id):
-            return _make_response(
-                self._get_specific_user_data(id), "http://localhost:3000"
-            )
+        @self.app.route("/user", methods=["GET"])  # 1. 특정 유저 id의 유저 정보 요청
+        def get_specific_user_data():
+            id = request.args.get("id")
+            if id:
+                return _make_response(
+                    self._get_specific_user_data(id), "http://localhost:3000"
+                )
+            else:
+                abort(400, description="No id Provided for Update User information")
+
+        @self.app.route("/user_update", method=["POST"])
+        def update_specific_user_data():
+            id = request.args.get("id")
+            if id:
+                return _make_response(
+                    self._update_specific_user_data(id), "http://localhost:3000"
+                )
+            else:
+                abort(400, description="No id Provided for Update User information")
 
     def transfer_data_to_rds(self):
         print("Trasfer DB Data [flask server -> RDS Database]", datetime.now(), "\n")
@@ -102,11 +132,11 @@ class MyFlaskApp:
                         farmAddr=value.get("farmAddr"),
                         butcheryPlaceNm=value.get("butcheryPlaceNm"),
                         butcheryYmd=value.get("butcheryYmd"),
-                        deepAging=json.dumps(value.get("deepAging")),
-                        fresh=json.dumps(value.get("fresh")),
-                        heated=json.dumps(value.get("heated")),
-                        tongue=json.dumps(value.get("tongue")),
-                        lab_data=json.dumps(value.get("lab_data")),
+                        deepAging=value.get("deepAging"),
+                        fresh=value.get("fresh"),
+                        heated=value.get("heated"),
+                        tongue=value.get("tongue"),
+                        lab_data=value.get("lab_data"),
                     )
                     rds_db.session.merge(meat)
                     print(f"Meat data added: {key} : {value}\n")
@@ -205,7 +235,7 @@ class MyFlaskApp:
                 # imagePath field
                 meat_dict[
                     "imagePath"
-                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meat_image/{meat_dict['id']}"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/{self.s3_conn.folder}/{meat_dict['id']}"
                 return jsonify(meat_dict)
 
     def _get_specific_user_data(self, id):  # 특정 유저 id의 유저 정보 요청
@@ -230,7 +260,7 @@ class MyFlaskApp:
 
             return jsonify(result)
 
-    def _update_specifie_meat_data(self, id):
+    def _update_specific_meat_data(self, id):  # 특정 육류 데이터 수정(db data만)
         if not request.json:
             abort(400, description="No data sent for update")
 
@@ -249,13 +279,40 @@ class MyFlaskApp:
                 else:
                     raise BadRequest(f"Field '{field}' not in Meat")
 
-            # Update S3
-            if "imagePath" in update_data:
-                self.s3_conn.update_image(update_data["imagePath"], meat.id)
-
             rds_db.session.commit()
 
             return jsonify(self._to_dict(meat))
+
+    def _update_specific_meat_image(self, id):  # 특정 육류 이미지 데이터 수정
+        # Axios 라이브러리 post을 이용해 저장한 파일을 첨부했을 경우에 이용되는 API
+        # 1. 파일이 없을 경우
+        if "file" not in request.files:
+            abort(400, description="No file part")
+
+        file = request.files["file"]
+
+        # 2. 파일 확인
+        if file.filename == "":
+            abort(400, description="No file selected for uploading")
+
+        if file:
+            # 1. Flask local server에 저장
+            filename = secure_filename(f"{id}.png")
+            file.save(os.path.join(UPDATE_IMAGE_FOLDER_PATH, filename))
+
+            # 2. S3에 저장
+            s3_file = f"{id}.png"
+            self.s3_conn.put_object(
+                self.s3_conn.bucket,
+                os.path.join(UPDATE_IMAGE_FOLDER_PATH, filename),
+                f"{self.s3_conn.folder}/{s3_file}",
+            )
+
+        else:
+            abort(400, description="Invalid file type, Only PNG files are allowed.")
+
+    def _update_specific_user_data(self, id):
+        pass
 
     def _to_dict(self, obj):  # ditionary 생성 function
         return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}

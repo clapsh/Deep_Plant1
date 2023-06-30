@@ -16,10 +16,10 @@ class Meat(rds_db.Model):
     butcheryPlaceNm = rds_db.Column(rds_db.String, nullable=False)
     butcheryYmd = rds_db.Column(rds_db.String, nullable=False)
     deepAging = rds_db.Column(rds_db.String, nullable=True)  # as JSON string
-    fresh = rds_db.Column(rds_db.String, nullable=True)  # as JSON string
-    heated = rds_db.Column(rds_db.String, nullable=True)  # as JSON string
-    tongue = rds_db.Column(rds_db.String, nullable=True)  # as JSON string
-    lab_data = rds_db.Column(rds_db.String, nullable=True)  # as JSON string
+    fresh = rds_db.Column(rds_db.JSON, nullable=True)  # as JSON string
+    heated = rds_db.Column(rds_db.JSON, nullable=True)  # as JSON string
+    tongue = rds_db.Column(rds_db.JSON, nullable=True)  # as JSON string
+    lab_data = rds_db.Column(rds_db.JSON, nullable=True)  # as JSON string
 
 
 class User1(rds_db.Model):
