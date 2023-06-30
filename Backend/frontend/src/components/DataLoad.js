@@ -2,9 +2,29 @@ import {useState, useEffect} from "react"
 import Meat from "./Meat";
 
 function DataLoad(){
+    const sample = {
+        "butcheryPlaceNm": "도드람LPC",
+        butcheryYmd: "20170920",
+        deepAging: null,
+        email: "example@example.com",
+        farmAddr:"강원도 원주시 호저면 매호리",
+        fresh : {color: 2.3, marbling: 5.2, surfaceMoisture: 1, texture: 3, total: 4},
+        gradeNm: 3,
+        heated : null,
+        id: "1-2-3-4-5",
+        l_division: "rib",
+        lab_data : null,
+        s_division: "chuck_short_rib",
+        saveTime: "23:45",
+        species: "cattle",
+        tongue: null,
+        traceNumber: "23",
+    };
+    //const sampleJson = JSON.stringify(sample);
+    const samples = [sample,];
     const [error, setError] = useState(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [items, setItems] = useState([]);
+    const [items, setItems] = useState([samples]);
 
     const getData = async() => {
         
@@ -14,8 +34,8 @@ function DataLoad(){
             )
         ).json();
         console.log('connected!!');
-        console.log(json[0]);
-        setItems(json[0]);
+        console.log(json);
+        setItems(json);
         setIsLoaded(true);
 
         
@@ -58,30 +78,63 @@ function DataLoad(){
         });
         */
     }
-    
+    /*
     useEffect(()=>{
         getData();
     },[]);
+*/
 
-
+useEffect(()=>{
+    setIsLoaded(true)
+},[]);
     //fetch 확인
-    console.log(items);
+    //console.log(items);
     if (error){
+        console.log('error!');
         return <>{error.message}</>
     }
 
+   /*
+    const data = ()=>{
+        //setItems([samples,]);
+        console.log(items);
+        console.log('es')
+        console.log({items});
+        setIsLoaded(true);
+        console.log(isLoaded);
+    }
+    */
+   
     return (
         <div>
             {
             isLoaded 
-            ? <div> 
+            ? (<div> 
                 {items.map((item) =>
-                <Meat/>                
+                <Meat
+                    key={item.id}
+                    id = {item.id}
+                    butcheryPlaceNm={item.butcheryPlaceNm}
+                    butcheryYmd={item.butcheryYmd}
+                    deepAging={item.deepAging}
+                    email={item.email} 
+                    farmAddr={item.farmAddr}
+                    fresh={item.fresh} 
+                    gradeNm={item.gradeNm}
+                    heated={item.heated} 
+                    l_division={item.l_division}
+                    lab_data={item.lab_data} 
+                    s_division={item.s_division}
+                    saveTime={item.saveTime} 
+                    species={item.species}
+                    tongue={item.tongue} 
+                    traceNumber={item.traceNumber}
+                />                
                 )}
-            </div>
+            </div>)
             : <div> <span>Loading...</span> </div>
+            
             }
-
            
         </div>
     );
