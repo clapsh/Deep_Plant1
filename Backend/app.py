@@ -19,7 +19,8 @@ from werkzeug.security import (
 import hashlib  # For password hashing
 from datetime import datetime  # 시간 출력용
 from flask import abort  # For data non existence
-from flask import make_response
+from flask import make_response # For making response in flask
+from werkzeug.exceptions import BadRequest # For making Error response
 
 """
 flask run --host=0.0.0.0 --port=8080
@@ -50,18 +51,24 @@ class MyFlaskApp:
         # 4. meat database 요청 Routing
         @self.app.route("/meat", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
-            return make_response(self._get_meat_data(), "http://localhost:3000")
+            return _make_response(self._get_meat_data(), "http://localhost:3000")
 
         @self.app.route("/meat/<id>", methods=["GET"])  # 2. 특정 관리번호 meat data 요청
         def get_specific_meat_data(id):
-            return make_response(
-                self._get_specific_meat_data(), "http://localhost:3000"
+            return _make_response(
+                self._get_specific_meat_data(id), "http://localhost:3000"
+            )
+
+        @self.app.route("/meat/<id>/update", methods=["POST"])
+        def update_specific_meat_data(id):
+            return _make_response(
+                self._update_specific_meat_data(id), "http://localhost:3000"
             )
 
         # 5. user database 요청 Routiong
         @self.app.route("/user/<id>", methods=["GET"])  # 1. 특정 유저 id의 유저 정보 요청
         def get_specific_user_data(id):
-            return make_response(
+            return _make_response(
                 self._get_specific_user_data(id), "http://localhost:3000"
             )
 
@@ -102,7 +109,7 @@ class MyFlaskApp:
                         tongue=json.dumps(value.get("tongue")),
                         lab_data=json.dumps(value.get("lab_data")),
                     )
-                    rds_db.session.add(meat)
+                    rds_db.session.merge(meat)
                     print(f"Meat data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding meat data: {e}\n")
@@ -138,7 +145,7 @@ class MyFlaskApp:
                         position=data.get("position"),
                         revisionMeatList=data.get("revisionMeatList"),
                     )
-                    rds_db.session.add(user)
+                    rds_db.session.merge(user)
 
                     print(f"User2 data added: {key} : {value}\n")
                 except Exception as e:
@@ -156,7 +163,7 @@ class MyFlaskApp:
                         position=value.get("position"),
                         pwd=value.get("password"),
                     )
-                    rds_db.session.add(user)
+                    rds_db.session.merge(user)
 
                     print(f"User3 data added: {key} : {value}\n")
                 except Exception as e:
@@ -175,36 +182,13 @@ class MyFlaskApp:
             meats = Meat.query.all()
             meat_list = []
             for meat in meats:
-                meat_list.append(
-                    {
-                        "id": meat.id,
-                        "email": meat.email,
-                        "saveTime": meat.saveTime,
-                        "traceNumber": meat.traceNumber,
-                        "species": meat.species,
-                        "l_division": meat.l_division,
-                        "s_division": meat.s_division,
-                        "gradeNm": meat.gradeNm,
-                        "farmAddr": meat.farmAddr,
-                        "butcheryPlaceNm": meat.butcheryPlaceNm,
-                        "butcheryYmd": meat.butcheryYmd,
-                        "deepAging": json.loads(
-                            meat.deepAging
-                        ),  # assuming the data was saved as JSON string
-                        "fresh": json.loads(
-                            meat.fresh
-                        ),  # assuming the data was saved as JSON string
-                        "heated": json.loads(
-                            meat.heated
-                        ),  # assuming the data was saved as JSON string
-                        "tongue": json.loads(
-                            meat.tongue
-                        ),  # assuming the data was saved as JSON string
-                        "lab_data": json.loads(
-                            meat.lab_data
-                        ),  # assuming the data was saved as JSON string
-                    }
-                )
+                meat_dict = self._to_dict(meat)
+                for field in ['deepAging', 'fresh', 'heated', 'tongue', 'lab_data']:
+                    if field in meat_dict:
+                        meat_dict[field] = json.loads(meat_dict[field])
+                # imagePath field
+                meat_dict["imagePath"] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meat_image/{meat_dict['id']}"
+                meat_list.append(meat_dict)
             return jsonify(meat_list)
 
     def _get_specific_meat_data(self, id):  # 특정 관리번호 meat data 요청
@@ -213,36 +197,13 @@ class MyFlaskApp:
             if meat is None:
                 abort(404, description="No meat data found with the given ID")
             else:
-                return jsonify(
-                    {
-                        "id": meat.id,
-                        "email": meat.email,
-                        "saveTime": meat.saveTime,
-                        "traceNumber": meat.traceNumber,
-                        "species": meat.species,
-                        "l_division": meat.l_division,
-                        "s_division": meat.s_division,
-                        "gradeNm": meat.gradeNm,
-                        "farmAddr": meat.farmAddr,
-                        "butcheryPlaceNm": meat.butcheryPlaceNm,
-                        "butcheryYmd": meat.butcheryYmd,
-                        "deepAging": json.loads(
-                            meat.deepAging
-                        ),  # assuming the data was saved as JSON string
-                        "fresh": json.loads(
-                            meat.fresh
-                        ),  # assuming the data was saved as JSON string
-                        "heated": json.loads(
-                            meat.heated
-                        ),  # assuming the data was saved as JSON string
-                        "tongue": json.loads(
-                            meat.tongue
-                        ),  # assuming the data was saved as JSON string
-                        "lab_data": json.loads(
-                            meat.lab_data
-                        ),  # assuming the data was saved as JSON string
-                    }
-                )
+                meat_dict = self._to_dict(meat)
+                for field in ['deepAging', 'fresh', 'heated', 'tongue', 'lab_data']:
+                    if field in meat_dict:
+                        meat_dict[field] = json.loads(meat_dict[field])
+                # imagePath field
+                meat_dict["imagePath"] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meat_image/{meat_dict['id']}"
+                return jsonify(meat_dict)
 
     def _get_specific_user_data(self, id):  # 특정 유저 id의 유저 정보 요청
         with self.app.app_context():
@@ -266,6 +227,33 @@ class MyFlaskApp:
 
             return jsonify(result)
 
+    def _update_specifie_meat_data(self,id):
+        if not request.json:
+            abort(400, description ="No data sent for update")
+        
+        update_data = request.json
+
+        with self.app.app_context():
+            meat = Meat.query.get(id)
+            
+            if meat is None:
+                abort(404, description = "No meat data found with the given ID")
+            
+            # Update RDS
+            for field, new_value in update_data.items():
+                if hasattr(meat,field):
+                    setattr(meat,field,new_value)
+                else:
+                    raise BadRequest(f"Field '{field}' not in Meat")
+            
+            # Update S3
+            if "imagePath" in update_data:
+                self.s3_conn.update_image(update_data["imagePath"],meat.id)
+            
+            rds_db.session.commit()
+
+            return jsonify(self._to_dict(meat))
+
     def _to_dict(self, obj):  # ditionary 생성 function
         return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
 
@@ -277,7 +265,7 @@ class MyFlaskApp:
         self.app.run(host=host, port=port)
 
 
-def make_response(data, url):  # For making response
+def _make_response(data, url):  # For making response
     response = make_response(data)
     response.headers["Access-Control-Allow-Origin"] = url
     return response
@@ -344,12 +332,12 @@ if __name__ == "__main__":
 
     # 2. Send data to S3 storage (Flask server(images folder) -> S3), 30sec
     scheduler.add_job(
-        myApp.s3_conn.transferImageData, "interval", minutes=0.5
+        myApp.s3_conn.transferImageData, "interval", minutes=0.6
     )  # 주기적 이미지 데이터 전송 flask server -> S3
 
     # 3. Send data to RDS (FireStore -> RDS), 30sec
     scheduler.add_job(
-        myApp.transfer_data_to_rds, "interval", minutes=0.6
+        myApp.transfer_data_to_rds, "interval", minutes=0.7
     )  # 주기적 Json Data 전송 flask server -> RDS
     scheduler.start()
 

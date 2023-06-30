@@ -66,3 +66,20 @@ class S3Bucket:
         """
         location = self.s3.get_bucket_location(Bucket=bucket)["LocationConstraint"]
         return f"https://{bucket}.s3.{location}.amazonaws.com/{filename}.jpg"
+    
+    def update_image(self, new_filepath,id):
+        # 1. 기존 파일 path
+        old_filename = f"{self.folder}/{id}.png"
+
+        # 2. 기존 파일 삭제
+        self.s3.delete_object(Bucket=self.bucket,Key=old_filename)
+
+        # 3. 새 파일 업로드
+        success = self.put_object(self.bucket,new_filepath,old_filename)
+        if not success:
+            print(f"Failed to upload new image for meat ID: {id}")
+
+        # 4. 성공했는지 못했는지 반환
+        return success
+    
+
