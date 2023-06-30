@@ -1,4 +1,4 @@
-from flask import Flask  # Flask Server import
+from flask import Flask, make_response  # Flask Server import
 import os  # Port Number assignment
 from apscheduler.schedulers.background import (
     BackgroundScheduler,
@@ -19,8 +19,8 @@ from werkzeug.security import (
 import hashlib  # For password hashing
 from datetime import datetime  # 시간 출력용
 from flask import abort  # For data non existence
-from flask import make_response # For making response in flask
-from werkzeug.exceptions import BadRequest # For making Error response
+from flask import make_response  # For making response in flask
+from werkzeug.exceptions import BadRequest  # For making Error response
 
 """
 flask run --host=0.0.0.0 --port=8080
@@ -31,7 +31,6 @@ flask run --host=0.0.0.0 --port=8080
 class MyFlaskApp:
     def __init__(self, config):
         self.app = Flask(__name__)
-
         # 1. RDS Config
         self.config = config
         self.app.config["SQLALCHEMY_DATABASE_URI"] = self._create_sqlalchemy_uri()
@@ -183,11 +182,13 @@ class MyFlaskApp:
             meat_list = []
             for meat in meats:
                 meat_dict = self._to_dict(meat)
-                for field in ['deepAging', 'fresh', 'heated', 'tongue', 'lab_data']:
+                for field in ["deepAging", "fresh", "heated", "tongue", "lab_data"]:
                     if field in meat_dict:
                         meat_dict[field] = json.loads(meat_dict[field])
                 # imagePath field
-                meat_dict["imagePath"] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meat_image/{meat_dict['id']}"
+                meat_dict[
+                    "imagePath"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meat_image/{meat_dict['id']}"
                 meat_list.append(meat_dict)
             return jsonify(meat_list)
 
@@ -198,11 +199,13 @@ class MyFlaskApp:
                 abort(404, description="No meat data found with the given ID")
             else:
                 meat_dict = self._to_dict(meat)
-                for field in ['deepAging', 'fresh', 'heated', 'tongue', 'lab_data']:
+                for field in ["deepAging", "fresh", "heated", "tongue", "lab_data"]:
                     if field in meat_dict:
                         meat_dict[field] = json.loads(meat_dict[field])
                 # imagePath field
-                meat_dict["imagePath"] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meat_image/{meat_dict['id']}"
+                meat_dict[
+                    "imagePath"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meat_image/{meat_dict['id']}"
                 return jsonify(meat_dict)
 
     def _get_specific_user_data(self, id):  # 특정 유저 id의 유저 정보 요청
@@ -227,29 +230,29 @@ class MyFlaskApp:
 
             return jsonify(result)
 
-    def _update_specifie_meat_data(self,id):
+    def _update_specifie_meat_data(self, id):
         if not request.json:
-            abort(400, description ="No data sent for update")
-        
+            abort(400, description="No data sent for update")
+
         update_data = request.json
 
         with self.app.app_context():
             meat = Meat.query.get(id)
-            
+
             if meat is None:
-                abort(404, description = "No meat data found with the given ID")
-            
+                abort(404, description="No meat data found with the given ID")
+
             # Update RDS
             for field, new_value in update_data.items():
-                if hasattr(meat,field):
-                    setattr(meat,field,new_value)
+                if hasattr(meat, field):
+                    setattr(meat, field, new_value)
                 else:
                     raise BadRequest(f"Field '{field}' not in Meat")
-            
+
             # Update S3
             if "imagePath" in update_data:
-                self.s3_conn.update_image(update_data["imagePath"],meat.id)
-            
+                self.s3_conn.update_image(update_data["imagePath"], meat.id)
+
             rds_db.session.commit()
 
             return jsonify(self._to_dict(meat))
@@ -342,4 +345,5 @@ if __name__ == "__main__":
     scheduler.start()
 
     # 3. Flask 서버 실행
+
     myApp.run()
