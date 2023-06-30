@@ -1,4 +1,4 @@
-from flask import Flask  # Flask Server import
+from flask import Flask, make_response  # Flask Server import
 import os  # Port Number assignment
 from apscheduler.schedulers.background import (
     BackgroundScheduler,
@@ -30,7 +30,6 @@ flask run --host=0.0.0.0 --port=8080
 class MyFlaskApp:
     def __init__(self, config):
         self.app = Flask(__name__)
-
         # 1. RDS Config
         self.config = config
         self.app.config["SQLALCHEMY_DATABASE_URI"] = self._create_sqlalchemy_uri()
@@ -50,18 +49,18 @@ class MyFlaskApp:
         # 4. meat database 요청 Routing
         @self.app.route("/meat", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
-            return make_response(self._get_meat_data(), "http://localhost:3000")
+            return _make_response(self._get_meat_data(), "http://localhost:3000")
 
         @self.app.route("/meat/<id>", methods=["GET"])  # 2. 특정 관리번호 meat data 요청
         def get_specific_meat_data(id):
-            return make_response(
+            return _make_response(
                 self._get_specific_meat_data(), "http://localhost:3000"
             )
 
         # 5. user database 요청 Routiong
         @self.app.route("/user/<id>", methods=["GET"])  # 1. 특정 유저 id의 유저 정보 요청
         def get_specific_user_data(id):
-            return make_response(
+            return _make_response(
                 self._get_specific_user_data(id), "http://localhost:3000"
             )
 
@@ -277,7 +276,7 @@ class MyFlaskApp:
         self.app.run(host=host, port=port)
 
 
-def make_response(data, url):  # For making response
+def _make_response(data, url):  # For making response
     response = make_response(data)
     response.headers["Access-Control-Allow-Origin"] = url
     return response
@@ -354,4 +353,6 @@ if __name__ == "__main__":
     scheduler.start()
 
     # 3. Flask 서버 실행
+
     myApp.run()
+
