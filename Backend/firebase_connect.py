@@ -23,15 +23,15 @@ class FireBase_:
 
         # 3. Making Buffer Data (Firebase -> Flask Server )
         self.temp_data = dict()  # 버퍼
-        self.temp_user1_data = dict() # 일반
-        self.temp_user2_data = dict() # 직원
-        self.temp_user3_data = dict() # 관리자
+        self.temp_normal_data = dict() # 일반
+        self.temp_researcher_data = dict() # 직원
+        self.temp_manager_data = dict() # 관리자
         self.temp_meat_data = dict()
 
     def print_flask_database(self):
-        print(f"transfer user-1 data: {self.temp_user1_data}")
-        print(f"transfer user-2 data: {self.temp_user2_data}")
-        print(f"transfer user-3 data: {self.temp_user3_data}")
+        print(f"transfer normal data: {self.temp_normal_data}")
+        print(f"transfer researcher data: {self.temp_researcher_data}")
+        print(f"transfer manager data: {self.temp_manager_data}")
         print(f"transfer meat data: {self.temp_meat_data}")
 
     def transferDbData(self):
