@@ -1,5 +1,9 @@
 import {useState, useEffect} from "react"
 import Meat from "./Meat";
+import Search from "./Search";
+import SearchFilter from "./SearchFilter";
+import styles from "./DataLoad.module.css"
+import Form from 'react-bootstrap/Form';
 
 function DataLoad(){
     const sample = {
@@ -24,7 +28,7 @@ function DataLoad(){
     const samples = [sample,];
     const [error, setError] = useState(null);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [items, setItems] = useState([samples]);
+    const [items, setItems] = useState(samples);
 
     const getData = async() => {
         
@@ -85,6 +89,7 @@ function DataLoad(){
 */
 
 useEffect(()=>{
+    setItems(samples)
     setIsLoaded(true)
 },[]);
     //fetch 확인
@@ -107,9 +112,13 @@ useEffect(()=>{
    
     return (
         <div>
+            <div className={`${styles.search_container}`}>
+                <Search/>
+                <SearchFilter/>
+            </div>
             {
             isLoaded 
-            ? (<div> 
+            ? (<div className={styles.meat_container}> 
                 {items.map((item) =>
                 <Meat
                     key={item.id}
@@ -135,6 +144,13 @@ useEffect(()=>{
             : <div> <span>Loading...</span> </div>
             
             }
+
+            <div className={`${styles.search_container}`}>
+                <Form.Group controlId="formFile" className="mb-3" >
+                <Form.Label>엑셀 파일 업로드</Form.Label>
+                <Form.Control type="file" />
+                </Form.Group>
+            </div>
            
         </div>
     );

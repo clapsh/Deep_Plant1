@@ -1,0 +1,40 @@
+.meat{
+    border: 1px solid gray;
+    display: flex;
+    padding: 10px 150px;/*위/ 오른쪽 / 아래 / 왼쪽 */
+    justify-content: space-around;
+
+}
+.meat_info{
+    border: 1px solid black;
+}
+
+.meat_code{
+    border: 1px solid gray;
+}
+.meat_img > img{
+    border: 1px solid gray;
+    width: 300px;
+}
+.email{
+    border: 1px solid gray;
+    height: 30px;
+    display: flex;
+    justify-content: space-between;
+}
+.save_time{
+    border: 1px solid gray;
+    height: 30px;
+    display: flex;
+    justify-content: space-between;
+}
+.button_wrapper{
+    display: flex;
+    align-items: end;
+ 
+}
+.button_box{
+    width: 100px;
+    display: flex;
+    justify-content: space-around;
+}

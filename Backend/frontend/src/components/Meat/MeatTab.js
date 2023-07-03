@@ -8,8 +8,8 @@ function MeatTab({fresh, heated , lab_data, tongue, apiData}){
     const [data, setData] = useState({});
     // 클릭한 tab을 가져오고 tab한 버튼에 따른 데이터를 가져옴 
     const currentTabHandler = (tab)=>{
+        fetchDataToTab(tab);
         setCurrentTab(tab);
-        fetchDataToTab();
     }
     /*
     console.log("fresh");
@@ -23,7 +23,7 @@ function MeatTab({fresh, heated , lab_data, tongue, apiData}){
     console.log(apiData);
     */
     // tab버튼에 따라서 보여줄 data를 다르게 set함
-    const fetchDataToTab =()=> {//async(pageNum) =>{
+    const fetchDataToTab =(currentTab)=> {//async(pageNum) =>{\
         switch(currentTab){
             case "firstBtn":
                 setData((heated));
@@ -47,12 +47,12 @@ function MeatTab({fresh, heated , lab_data, tongue, apiData}){
     }
 
     return(
-        <div>
+        <div className={styles.meat_info_container}>
             <TabBtns
                 currentTab={currentTab}
                 currentTabHandler={currentTabHandler}
             />
-            <div>
+            <div className={styles.meat_info_container_content}>
                 {console.log('setdata')}
                 {data ? JSON.stringify(data) : 'null'}      
             </div>

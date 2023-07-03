@@ -1,0 +1,10 @@
+.meat_info_container{
+    width: 100%;
+    margin: 0px 50px;
+    justify-content: center;
+    align-items: center;
+}
+.meat_info_container_content{
+    align-items: center;
+    width: 90%;
+}

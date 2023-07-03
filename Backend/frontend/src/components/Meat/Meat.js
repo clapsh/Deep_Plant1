@@ -1,8 +1,11 @@
 import PropTypes from "prop-types";
 import styles from "./Meat.module.css";
+import {Link} from "react-router-dom";
 import {FaRegPenToSquare} from "react-icons/fa6";
 import MeatTab from "./MeatTab";
-import meatImg from "../src_assets/meat.jpeg"
+import meatImg from "../../src_assets/meat.jpeg"
+import Button from '@mui/material/Button';
+
 // 고기 데이터를 받아서 조회/수정 
 function Meat({id, butcheryPlaceNm, butcheryYmd, deepAging, email, farmAddr, fresh, gradeNm,
     heated, l_division, lab_data , s_division, saveTime, species, tongue, traceNumber}){
@@ -23,18 +26,13 @@ function Meat({id, butcheryPlaceNm, butcheryYmd, deepAging, email, farmAddr, fre
     <div className={styles.meat}>
         <div className={styles.meat_info}>
             <div className={styles.meat_code}>
-                <span>{id}</span>
-                <FaRegPenToSquare/>
-            <div>
-            <div>
-              {email}
+              <span>관리번호: {id}</span>
             </div>
-            <div>
-              {saveTime}
+            <div className={styles.email}>
+              <div>email: {email}</div>
             </div>
-            
-          </div>
-
+            <div className={styles.save_time}>
+              <div>저장 시간: {saveTime}</div>
             </div>
             <div className={styles.meat_img}>
                 <img src={meatImg}/>
@@ -47,7 +45,15 @@ function Meat({id, butcheryPlaceNm, butcheryYmd, deepAging, email, farmAddr, fre
           tongue={tongue}
           apiData = {apiData}
         />
-        
+        <div className={styles.button_wrapper}>
+          <Link to={{pathname : `/dataEdit/${id}`}}>
+            <Button variant="contained" className={styles.button_box}>
+              수정
+              <FaRegPenToSquare/>
+            </Button>
+          </Link>
+          
+        </div>           
     </div>);
 }
 

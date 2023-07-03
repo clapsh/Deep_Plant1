@@ -1,0 +1,14 @@
+.tabOn{
+  background-color: #1565C0;
+  color:white;
+  font-weight: 600;
+  border-width: 2px;
+}
+.tabOn:hover{
+  color:#1565C0;
+}
+
+.tabOff{
+  font-weight: 600;
+  border-width: 2px;
+}
