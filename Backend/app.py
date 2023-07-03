@@ -451,7 +451,7 @@ login_manager.init_app(myApp.app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User3.query.get(user_id)
+    return Manager.query.get(user_id)
 
 
 @myApp.app.route("/register", methods=["POST"])
@@ -460,7 +460,7 @@ def register():
     hashed_password = hashlib.sha256(
         data["password"].encode()
     ).hexdigest()  # hash 화 후 저장
-    user = User3(
+    user = Manager(
         id=data["id"],
         name=data["name"],
         company=data["company"],
@@ -475,7 +475,7 @@ def register():
 @myApp.app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
-    user = User3.query.filter_by(id=data["id"]).first()
+    user = Manager.query.filter_by(id=data["id"]).first()
     if user and user.pwd == hashlib.sha256(data["password"].encode()).hexdigest():
         login_user(user)
         return jsonify({"message": "Logged in successfully"}), 200
