@@ -23,7 +23,7 @@ class S3Bucket:
             print("S3 Bucket Connected!")
 
     def transferImageData(self):  # flask server -> S3 Database
-        print("Trasfer Image Data [flask server -> S3 Database]",datetime.now())
+        print("2. Trasfer Image Data [flask server -> S3 Database]",datetime.now())
         for filename in os.listdir(IMAGE_FOLDER_PATH):
             if filename.endswith(".png"):
                 filepath = os.path.join(IMAGE_FOLDER_PATH, filename)

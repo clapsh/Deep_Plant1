@@ -8,7 +8,19 @@ import s3_connect  # S3 Connect
 import keyId  # Key data in this Backend file
 from flask_sqlalchemy import SQLAlchemy  # For implement RDS database in server
 import db_config  # For implement RDS database in server
-from db_connect import rds_db, Meat,User, DeepAging, Fresh, Heated, LabData,Tongue,Normal,Researcher,Manager # RDS Connect
+from db_connect import (
+    rds_db,
+    Meat,
+    User,
+    DeepAging,
+    Fresh,
+    Heated,
+    LabData,
+    Tongue,
+    Normal,
+    Researcher,
+    Manager,
+)  # RDS Connect
 import json  # For Using Json files
 from flask_login import login_user, logout_user, current_user, LoginManager  # For Login
 from flask import Blueprint, request, jsonify  # For web request
@@ -89,9 +101,11 @@ class MyFlaskApp:
                     self._get_specific_user_data(id), "http://localhost:3000"
                 )
             else:
-                abort(400, description="No id Provided for Update User information")
+                return _make_response(
+                    self._get_user_data(), "http://localhost:3000"
+                )
 
-        @self.app.route("/user_update", methods=["POST"])
+        @self.app.route("/user/update", methods=["POST"])
         def update_specific_user_data():
             id = request.args.get("id")
             if id:
@@ -102,7 +116,7 @@ class MyFlaskApp:
                 abort(400, description="No id Provided for Update User information")
 
     def transfer_data_to_rds(self):
-        print("Trasfer DB Data [flask server -> RDS Database]", datetime.now(), "\n")
+        print("3. Trasfer DB Data [flask server -> RDS Database]", datetime.now(), "\n")
         """
         Flask server -> RDS
         Firebase에서 새로 저장된 데이터들은 각각 다음의 변수에 저장됩니다.
@@ -111,12 +125,11 @@ class MyFlaskApp:
         self.firestore_conn.temp_user3_data <= user3 database
         self.firestore_conn.temp_meat_data <= meat database
         """
-         # 1. Update Meat data to RDS
+        # 1. Update Meat data to RDS
         meat_data = self.firestore_conn.temp_meat_data
         normal_data = self.firestore_conn.temp_normal_data
         researcher_data = self.firestore_conn.temp_researcher_data
         manager_data = self.firestore_conn.temp_manager_data
-
 
         with self.app.app_context():
             for key, value in meat_data.items():
@@ -125,16 +138,18 @@ class MyFlaskApp:
                     deepAging = DeepAging(id=key, period=deepAging_data)
 
                     fresh_data = value.get("fresh")
-                    fresh = Fresh(id=key, **fresh_data)if fresh_data else None
+                    fresh = Fresh(id=key, **fresh_data) if fresh_data else None
 
                     heated_data = value.get("heated")
-                    heated = Heated(id=key, **heated_data)if heated_data else None
+                    heated = Heated(id=key, **heated_data) if heated_data else None
 
                     tongue_data = value.get("tongue")
-                    tongue = Tongue(id=key, **tongue_data)if tongue_data else None
+                    tongue = Tongue(id=key, **tongue_data) if tongue_data else None
 
                     lab_data_data = value.get("lab_data")
-                    lab_data = LabData(id=key, **lab_data_data)if lab_data_data else None
+                    lab_data = (
+                        LabData(id=key, **lab_data_data) if lab_data_data else None
+                    )
 
                     meat = Meat(
                         id=key,
@@ -170,7 +185,7 @@ class MyFlaskApp:
                 except Exception as e:
                     print(f"Error adding meat data: {e}\n")
 
-             # 2. Update Normal data to RDS
+            # 2. Update Normal data to RDS
             for key, value in normal_data.items():
                 try:
                     meat_list = []
@@ -178,7 +193,7 @@ class MyFlaskApp:
                         try:
                             meat_list.append(Meat.query.get(m_id))
                         except:
-                            meat_list.append(None) 
+                            meat_list.append(None)
                     normal = Normal(
                         id=key,
                         meatList=meat_list,
@@ -187,7 +202,7 @@ class MyFlaskApp:
                         company=value.get("company"),
                         position=value.get("position"),
                     )
-                    rds_db.session.add(normal)
+                    rds_db.session.merge(normal)
 
                     print(f"Normal data added: {key} : {value}\n")
                 except Exception as e:
@@ -202,7 +217,7 @@ class MyFlaskApp:
                         try:
                             meat_list.append(Meat.query.get(m_id))
                         except:
-                            meat_list.append(None)  
+                            meat_list.append(None)
 
                     for m_id in value.get("revisionMeatList"):
                         try:
@@ -288,10 +303,10 @@ class MyFlaskApp:
                 # imagePath field
                 meat_dict[
                     "imagePath"
-                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/{self.s3_conn.folder}/{meat_dict['id']}"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/{self.s3_conn.folder}/{meat_dict['id']}.png"
                 return jsonify(meat_dict)
 
-    def _get_specific_user_data(self, id):  # Get specific user ID data
+    def _get_specific_user_data(self, id):  # 특정 ID의 유저정보 요청
         with self.app.app_context():
             # 1. Fetch
             user_data = User.query.get(id)
@@ -304,14 +319,41 @@ class MyFlaskApp:
             user_dict = self._to_dict(user_data)
 
             # 4. If the user type is 'normal' or 'researcher', convert meat list from SQLAlchemy objects to dictionaries
-            if user_data.type in ['normal', 'researcher']:
-                user_dict['meatList'] = [self._to_dict(meat) for meat in user_data.meatList]
-                if user_data.type == 'researcher':
-                    user_dict['revisionMeatList'] = [self._to_dict(meat) for meat in user_data.revisionMeatList]
+            if user_data.type in ["normal", "researcher"]:
+                user_dict["meatList"] = [
+                    self._to_dict(meat) for meat in user_data.meatList
+                ]
+                if user_data.type == "researcher":
+                    user_dict["revisionMeatList"] = [
+                        self._to_dict(meat) for meat in user_data.revisionMeatList
+                    ]
 
             return jsonify(user_dict)
 
+    def _get_user_data(self): # 모든 유저 정보 반환
+        with self.app.app_context():
+            # 1. 모든 유저 정보 가져오기
+            all_users = User.query.all()
 
+            # 2. 구분해 반환 예정
+            user_data_by_type = {
+                "normal": [],
+                "researcher": [],
+                "manager": []
+            }
+
+            # 3. Convert
+            for user in all_users:
+                user_dict = self._to_dict(user)
+
+                if user.type in ["normal", "researcher"]:
+                    user_dict["meatList"] = [self._to_dict(meat) for meat in user.meatList]
+                    if user.type == "researcher":
+                        user_dict["revisionMeatList"] = [self._to_dict(meat) for meat in user.revisionMeatList]
+
+                user_data_by_type[user.type].append(user_dict)
+
+            return jsonify(user_data_by_type)
 
     def _update_specific_meat_data(self, id):  # 특정 육류 데이터 수정(db data만)
         # 전제: 관리번호는 죽어도 수정되지 않는다!!!
@@ -336,12 +378,17 @@ class MyFlaskApp:
                     if field in ["deepAging", "fresh", "heated", "tongue", "lab_data"]:
                         related_obj = getattr(meat, field)
                         if related_obj is None:
-                            abort(400, description=f"No related data found for field '{field}'")
+                            abort(
+                                400,
+                                description=f"No related data found for field '{field}'",
+                            )
                         for subfield, new_subvalue in new_value.items():
                             if hasattr(related_obj, subfield):
                                 setattr(related_obj, subfield, new_subvalue)
                             else:
-                                raise BadRequest(f"Subfield '{subfield}' not in {field.capitalize()}")
+                                raise BadRequest(
+                                    f"Subfield '{subfield}' not in {field.capitalize()}"
+                                )
                     else:
                         setattr(meat, field, new_value)
                 else:
@@ -350,7 +397,6 @@ class MyFlaskApp:
             rds_db.session.commit()
 
             return jsonify(self._to_dict(meat))
-
 
     def _update_specific_meat_image(self, id):  # 특정 육류 이미지 데이터 수정
         # Axios 라이브러리 post을 이용해 저장한 파일을 첨부했을 경우에 이용되는 API
@@ -380,36 +426,54 @@ class MyFlaskApp:
         else:
             abort(400, description="Invalid file type, Only PNG files are allowed.")
 
-    def _update_specific_user_data(self, id):  # Update specific user data
+    def _update_specific_user_data(self, id):  # 특정 유저 정보 업데이트
+        # 1. 유효성 확인
         if not request.json:
             abort(400, description="No data sent for update")
-
         update_data = request.json
 
         with self.app.app_context():
-            # Fetch the user
+            # 2. User 확인
             user = User.query.get(id)
-
             if user is None:
-                abort(404, description="No user data found with the given ID")
+                abort(404, description="No user data was found with the given ID")
 
-            change_to_type = update_data.get('type')
+            # 3. type 확인
+            change_to_type = update_data.get("type")  # Change_to_type
 
             if change_to_type:
-                # Handle change in user type (role)
-                if change_to_type == 'normal':
-                    new_user = Normal(**update_data)
-                elif change_to_type == 'researcher':
-                    new_user = Researcher(**update_data)
-                elif change_to_type == 'manager':
-                    new_user = Manager(**update_data)
+                # 기존 유저 정보 탐색
+                old_user_data = self._to_dict(user)
+
+                # 유저 DB 이동
+                if change_to_type == "normal":
+                    fields_to_ignore = ["revisionMeatList"]
+                    old_user_data = {
+                        k: v
+                        for k, v in old_user_data.items()
+                        if k not in fields_to_ignore
+                    }
+                    new_user = Normal(**old_user_data)
+                elif change_to_type == "researcher":
+                    
+                    new_user = Researcher(**old_user_data)
+                elif change_to_type == "manager":
+                    new_user = Manager(**old_user_data)
                 else:
                     abort(400, description="Invalid type")
 
-                rds_db.session.delete(user)  # delete old user data
-                rds_db.session.add(new_user)  # add new user data
+                # 혹시 추가 데이터로 Update를 원한다면 추가
+                for field, new_value in update_data.items():
+                    if hasattr(new_user, field):
+                        setattr(new_user, field, new_value)
+                    else:
+                        abort(400, description=f"Field '{field}' not in User")
+
+                rds_db.session.delete(user)  # delete old user
+                rds_db.session.add(new_user)  # add new user
+
             else:
-                # Update existing user data
+                # Changing에 없다면 데이터 추가
                 for field, new_value in update_data.items():
                     if hasattr(user, field):
                         setattr(user, field, new_value)
@@ -417,15 +481,13 @@ class MyFlaskApp:
                         abort(400, description=f"Field '{field}' not in User")
 
             rds_db.session.commit()
+            response_data = new_user if change_to_type else old_user_data
+            return jsonify(self._to_dict(response_data))
 
-            return jsonify(self._to_dict(user))
-
-
-    def _to_dict(self, model): # database 생성 메서드
+    def _to_dict(self, model):  # database 생성 메서드
         if model is None:
             return None
         return {c.name: getattr(model, c.name) for c in model.__table__.columns}
-
 
     def _create_sqlalchemy_uri(self):  # uri 생성
         aws_db = self.config["aws_db"]
@@ -489,7 +551,10 @@ def logout():
     return jsonify({"message": "Logged out successfully"}), 200
 
 
-# 3. user(1,2,3) database 요청 Routing
+def scheduler_function():
+    myApp.firestore_conn.transferDbData() # (FireStore -> Flask Server)
+    myApp.s3_conn.transferImageData() # (Flask server(images folder) -> S3)
+    myApp.transfer_data_to_rds() #  (FireStore -> RDS)
 
 
 # Server 구동
@@ -497,20 +562,10 @@ if __name__ == "__main__":
     # 1. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
     scheduler = BackgroundScheduler(daemon=True, timezone="Asia/Seoul")
     scheduler.add_job(
-        myApp.firestore_conn.transferDbData, "interval", minutes=0.5
+        scheduler_function, "interval", minutes=0.5
     )  # 주기적 데이터 전송 firebase -> flask server
-
-    # 2. Send data to S3 storage (Flask server(images folder) -> S3), 30sec
-    scheduler.add_job(
-        myApp.s3_conn.transferImageData, "interval", minutes=0.6
-    )  # 주기적 이미지 데이터 전송 flask server -> S3
-
-    # 3. Send data to RDS (FireStore -> RDS), 30sec
-    scheduler.add_job(
-        myApp.transfer_data_to_rds, "interval", minutes=0.7
-    )  # 주기적 Json Data 전송 flask server -> RDS
     scheduler.start()
 
-    # 3. Flask 서버 실행
+    # 2. Flask 서버 실행
 
     myApp.run()

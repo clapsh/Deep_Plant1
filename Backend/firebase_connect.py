@@ -35,7 +35,7 @@ class FireBase_:
         print(f"transfer meat data: {self.temp_meat_data}")
 
     def transferDbData(self):
-        print("Trasfer DB&Image Data [Firebase -> Flask Server]",datetime.now())
+        print("1. Trasfer DB&Image Data [Firebase -> Flask Server]",datetime.now())
         # 1. 바뀐 데이터 확인
         self.firestoreCheck()
 
@@ -44,17 +44,17 @@ class FireBase_:
             # 1. firestore -> server 가져오기
             self.firestore2server("users_1")
             # 2. 버퍼에 있는 데이터 채워두기
-            self.temp_user1_data = self.temp_data
+            self.temp_normal_data = self.temp_data
         if self.fix_data_state["fix_data"]["users_2"]:
             # 1. firestore -> server 가져오기
             self.firestore2server("users_2")
             # 2. 버퍼에 있는 데이터 채워두기
-            self.temp_user2_data = self.temp_data
+            self.temp_researcher_data = self.temp_data
         if self.fix_data_state["fix_data"]["users_3"]:
             # 1. firestore -> server 가져오기
             self.firestore2server("users_3")
             # 2. 버퍼에 있는 데이터 채워두기
-            self.temp_user3_data = self.temp_data
+            self.temp_manager_data = self.temp_data
         if self.fix_data_state["fix_data"]["meat"]:
             # 1. firestore -> server 가져오기
             self.firestore2server("meat")
