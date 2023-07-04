@@ -34,6 +34,7 @@ from flask import abort  # For data non existence
 from flask import make_response  # For making response in flask
 from werkzeug.exceptions import BadRequest  # For making Error response
 from werkzeug.utils import secure_filename  # For checking file name from react page
+from datetime import datetime
 
 """
 flask run --host=0.0.0.0 --port=8080
@@ -59,15 +60,21 @@ class MyFlaskApp:
         self.firestore_conn = firebase_connect.FireBase_()
 
         # 3. S3 Database Config
-        self.s3_conn = s3_connect.S3Bucket(keyId.s3_folder_name)
+        self.s3_conn = s3_connect.S3Bucket()
 
         # 4. meat database 요청 Routing
         @self.app.route("/meat", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
             id = request.args.get("id")
+            offset = request.args.get("offset")
+            count = request.args.get("count")
             if id:
                 return _make_response(
                     self._get_specific_meat_data(id), "http://localhost:3000"
+                )
+            elif offset and count:
+                return _make_response(
+                    self._get_range_meat_data(offset, count), "http://localhost:3000"
                 )
             else:
                 return _make_response(self._get_meat_data(), "http://localhost:3000")
@@ -85,9 +92,11 @@ class MyFlaskApp:
         @self.app.route("/meat/upload_image", methods=["POST"])  # 4. 특정 육류 이미지 데이터 수정
         def update_specific_meat_image():
             id = request.args.get("id")
+            folder = request.args.get("folder")  # meats 이거나 qr_codes
             if id:
                 return _make_response(
-                    self._update_specific_meat_image(id), "http://localhost:3000"
+                    self._update_specific_meat_image(id, folder),
+                    "http://localhost:3000",
                 )
             else:
                 abort(400, description="No id Provided for upload image")
@@ -101,9 +110,7 @@ class MyFlaskApp:
                     self._get_specific_user_data(id), "http://localhost:3000"
                 )
             else:
-                return _make_response(
-                    self._get_user_data(), "http://localhost:3000"
-                )
+                return _make_response(self._get_user_data(), "http://localhost:3000")
 
         @self.app.route("/user/update", methods=["POST"])
         def update_specific_user_data():
@@ -134,6 +141,9 @@ class MyFlaskApp:
         with self.app.app_context():
             for key, value in meat_data.items():
                 try:
+                    saveTime = convert2datetime(value.get("saveTime"), 1)
+                    butcheryYmd = convert2datetime(value.get("butcheryYmd"), 2)
+
                     deepAging_data = value.get("deepAging")
                     deepAging = DeepAging(id=key, period=deepAging_data)
 
@@ -154,7 +164,7 @@ class MyFlaskApp:
                     meat = Meat(
                         id=key,
                         email=value.get("email"),
-                        saveTime=value.get("saveTime"),
+                        saveTime=saveTime,
                         traceNumber=value.get("traceNumber"),
                         species=value.get("species"),
                         l_division=value.get("l_division"),
@@ -162,7 +172,7 @@ class MyFlaskApp:
                         gradeNm=value.get("gradeNm"),
                         farmAddr=value.get("farmAddr"),
                         butcheryPlaceNm=value.get("butcheryPlaceNm"),
-                        butcheryYmd=value.get("butcheryYmd"),
+                        butcheryYmd=butcheryYmd,
                         deepAging=deepAging,
                         fresh=fresh,
                         heated=heated,
@@ -188,16 +198,18 @@ class MyFlaskApp:
             # 2. Update Normal data to RDS
             for key, value in normal_data.items():
                 try:
+                    lastLogin = convert2datetime(value.get("lastLogin"), 1)
                     meat_list = []
                     for m_id in value.get("meatList"):
                         try:
+
                             meat_list.append(Meat.query.get(m_id))
                         except:
-                            meat_list.append(None)
+                            print(f"Error adding Meat data - No meat id in DB{m_id}")
                     normal = Normal(
                         id=key,
                         meatList=meat_list,
-                        lastLogin=value.get("lastLogin"),
+                        lastLogin=lastLogin,
                         name=value.get("name"),
                         company=value.get("company"),
                         position=value.get("position"),
@@ -213,6 +225,7 @@ class MyFlaskApp:
                 try:
                     meat_list = []
                     revision_meat_list = []
+                    lastLogin = convert2datetime(value.get("lastLogin"), 1)
                     for m_id in value.get("meatList"):
                         try:
                             meat_list.append(Meat.query.get(m_id))
@@ -228,7 +241,7 @@ class MyFlaskApp:
                         id=key,
                         meatList=meat_list,
                         revisionMeatList=revision_meat_list,
-                        lastLogin=value.get("lastLogin"),
+                        lastLogin=lastLogin,
                         name=value.get("name"),
                         company=value.get("company"),
                         position=value.get("position"),
@@ -242,9 +255,10 @@ class MyFlaskApp:
             # 4. Update Manager data to RDS
             for key, value in manager_data.items():
                 try:
+                    lastLogin = convert2datetime(value.get("lastLogin"), 1)
                     manager = Manager(
                         id=key,
-                        lastLogin=value.get("lastLogin"),
+                        lastLogin=lastLogin,
                         name=value.get("name"),
                         company=value.get("company"),
                         position=value.get("position"),
@@ -280,8 +294,11 @@ class MyFlaskApp:
 
                 # imagePath field
                 meat_dict[
-                    "imagePath"
-                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/{self.s3_conn.folder}/{meat_dict['id']}"
+                    "meat_imagePath"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meats/{meat_dict['id']}"
+                meat_dict[
+                    "qr_imagePath"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/qr_codes/{meat_dict['id']}"
                 meat_list.append(meat_dict)
             return jsonify(meat_list)
 
@@ -305,6 +322,17 @@ class MyFlaskApp:
                     "imagePath"
                 ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/{self.s3_conn.folder}/{meat_dict['id']}.png"
                 return jsonify(meat_dict)
+
+    def _get_range_meat_data(self, offset, count):  # 날짜를 기준으로 특정 범위의 meat data 요청
+        offset = int(offset)
+        count = int(count)
+        meat_data = (
+            Meat.query.order_by(Meat.saveTime.desc())
+            .offset(offset * count)
+            .limit(count)
+            .all()
+        )
+        return [self._to_dict(data) for data in meat_data]
 
     def _get_specific_user_data(self, id):  # 특정 ID의 유저정보 요청
         with self.app.app_context():
@@ -330,26 +358,26 @@ class MyFlaskApp:
 
             return jsonify(user_dict)
 
-    def _get_user_data(self): # 모든 유저 정보 반환
+    def _get_user_data(self):  # 모든 유저 정보 반환
         with self.app.app_context():
             # 1. 모든 유저 정보 가져오기
             all_users = User.query.all()
 
             # 2. 구분해 반환 예정
-            user_data_by_type = {
-                "normal": [],
-                "researcher": [],
-                "manager": []
-            }
+            user_data_by_type = {"normal": [], "researcher": [], "manager": []}
 
             # 3. Convert
             for user in all_users:
                 user_dict = self._to_dict(user)
 
                 if user.type in ["normal", "researcher"]:
-                    user_dict["meatList"] = [self._to_dict(meat) for meat in user.meatList]
+                    user_dict["meatList"] = [
+                        self._to_dict(meat) for meat in user.meatList
+                    ]
                     if user.type == "researcher":
-                        user_dict["revisionMeatList"] = [self._to_dict(meat) for meat in user.revisionMeatList]
+                        user_dict["revisionMeatList"] = [
+                            self._to_dict(meat) for meat in user.revisionMeatList
+                        ]
 
                 user_data_by_type[user.type].append(user_dict)
 
@@ -374,6 +402,10 @@ class MyFlaskApp:
             # Update RDS
             for field, new_value in update_data.items():
                 if hasattr(meat, field):
+                    if field == "saveTime":
+                        new_value = convert2datetime(new_value, 1)
+                    elif field == "butcheryYmd":
+                        new_value = convert2datetime(new_value, 2)
                     # Update this part to handle the case of associated tables
                     if field in ["deepAging", "fresh", "heated", "tongue", "lab_data"]:
                         related_obj = getattr(meat, field)
@@ -398,7 +430,7 @@ class MyFlaskApp:
 
             return jsonify(self._to_dict(meat))
 
-    def _update_specific_meat_image(self, id):  # 특정 육류 이미지 데이터 수정
+    def _update_specific_meat_image(self, id, folder):  # 특정 육류 이미지 데이터 수정
         # Axios 라이브러리 post을 이용해 저장한 파일을 첨부했을 경우에 이용되는 API
         # 1. 파일이 없을 경우
         if "file" not in request.files:
@@ -416,13 +448,11 @@ class MyFlaskApp:
             file.save(os.path.join(UPDATE_IMAGE_FOLDER_PATH, filename))
 
             # 2. S3에 저장
-            s3_file = f"{id}.png"
-            self.s3_conn.put_object(
-                self.s3_conn.bucket,
-                os.path.join(UPDATE_IMAGE_FOLDER_PATH, filename),
-                f"{self.s3_conn.folder}/{s3_file}",
-            )
+            new_filepath = os.path.join(UPDATE_IMAGE_FOLDER_PATH, filename)
+            success = self.s3_conn.update_image(new_filepath, id, folder)
 
+            if not success:
+                print(f"Failed to upload new image for ID: {id}")
         else:
             abort(400, description="Invalid file type, Only PNG files are allowed.")
 
@@ -455,7 +485,6 @@ class MyFlaskApp:
                     }
                     new_user = Normal(**old_user_data)
                 elif change_to_type == "researcher":
-                    
                     new_user = Researcher(**old_user_data)
                 elif change_to_type == "manager":
                     new_user = Manager(**old_user_data)
@@ -464,6 +493,8 @@ class MyFlaskApp:
 
                 # 혹시 추가 데이터로 Update를 원한다면 추가
                 for field, new_value in update_data.items():
+                    if field == "lastLogin":
+                        new_value = convert2datetime(new_value, 1)
                     if hasattr(new_user, field):
                         setattr(new_user, field, new_value)
                     else:
@@ -501,6 +532,15 @@ def _make_response(data, url):  # For making response
     response = make_response(data)
     response.headers["Access-Control-Allow-Origin"] = url
     return response
+
+
+def convert2datetime(date_string, format):
+    if format == 1:
+        return datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
+    elif format == 2:
+        return datetime.strptime(date_string, "%Y%m%d")
+    else:
+        return date_string
 
 
 # Init RDS
@@ -552,9 +592,10 @@ def logout():
 
 
 def scheduler_function():
-    myApp.firestore_conn.transferDbData() # (FireStore -> Flask Server)
-    myApp.s3_conn.transferImageData() # (Flask server(images folder) -> S3)
-    myApp.transfer_data_to_rds() #  (FireStore -> RDS)
+    myApp.firestore_conn.transferDbData()  # (FireStore -> Flask Server)
+    myApp.s3_conn.transferImageData("meats")  # (Flask server(images folder) -> S3)
+    myApp.s3_conn.transferImageData("qr_codes")  # (Flask server(images folder) -> S3)
+    myApp.transfer_data_to_rds()  #  (FireStore -> RDS)
 
 
 # Server 구동

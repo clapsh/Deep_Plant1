@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, DateTime
 from sqlalchemy.pool import Pool
 
 rds_db = SQLAlchemy()
@@ -8,7 +8,7 @@ rds_db = SQLAlchemy()
 class Meat(rds_db.Model):
     id = rds_db.Column(rds_db.String, primary_key=True)
     email = rds_db.Column(rds_db.String, nullable=False)
-    saveTime = rds_db.Column(rds_db.String, nullable=False)
+    saveTime = rds_db.Column(DateTime, nullable=False)
     traceNumber = rds_db.Column(rds_db.String, nullable=False)
     species = rds_db.Column(rds_db.String, nullable=False)
     l_division = rds_db.Column(rds_db.String, nullable=False)
@@ -16,7 +16,7 @@ class Meat(rds_db.Model):
     gradeNm = rds_db.Column(rds_db.String, nullable=False)
     farmAddr = rds_db.Column(rds_db.String, nullable=False)
     butcheryPlaceNm = rds_db.Column(rds_db.String, nullable=False)
-    butcheryYmd = rds_db.Column(rds_db.String, nullable=False)
+    butcheryYmd = rds_db.Column(DateTime, nullable=False)
 
     deepAging = rds_db.relationship(
         "DeepAging", backref="meat", lazy=True, uselist=False
@@ -75,7 +75,7 @@ class LabData(rds_db.Model):  # 실험데이터
 class User(rds_db.Model):
     __tablename__ = "user"
     id = rds_db.Column(rds_db.String, primary_key=True)
-    lastLogin = rds_db.Column(rds_db.String, nullable=False)
+    lastLogin = rds_db.Column(DateTime, nullable=False)
     name = rds_db.Column(rds_db.String, nullable=False)
     company = rds_db.Column(rds_db.String, nullable=True)
     position = rds_db.Column(rds_db.String, nullable=True)

@@ -7,9 +7,9 @@ IMAGE_FOLDER_PATH = "./images/"
 
 
 class S3Bucket:
-    def __init__(self, folder):
+    def __init__(self):
         self.bucket = keyId.s3_bucket_name  # 버킷 지정
-        self.folder = folder  # 저장할 폴더 지정
+        #self.folder = ["meats","qr_codes"]  # 저장할 폴더 지정
         try:
             self.s3 = boto3.client(
                 service_name="s3",
@@ -22,19 +22,24 @@ class S3Bucket:
         else:
             print("S3 Bucket Connected!")
 
-    def transferImageData(self):  # flask server -> S3 Database
-        print("2. Trasfer Image Data [flask server -> S3 Database]",datetime.now())
-        for filename in os.listdir(IMAGE_FOLDER_PATH):
+    def transferImageData(self,folder):  # flask server -> S3 Database
+        if folder == "meats":
+            print("2-1. Trasfer meat Image Data [flask server -> S3 Database]",datetime.now())
+        elif folder =="qr_codes":
+            print("2-2. Trasfer QR Image Data [flask server -> S3 Database]",datetime.now())
+        local_folder_path = os.path.join(IMAGE_FOLDER_PATH,folder)
+        for filename in os.listdir(local_folder_path):
             if filename.endswith(".png"):
-                filepath = os.path.join(IMAGE_FOLDER_PATH, filename)
-                if self.put_object(self.bucket, filepath, f"{self.folder}/{filename}"):
+                filepath = os.path.join(local_folder_path, filename)
+                if self.put_object(self.bucket, filepath, f"{folder}/{filename}"):
                     print(
-                        f"Successfully uploaded {filename} to {self.bucket}/{self.folder}"
+                        f"Successfully uploaded {filename} to {self.bucket}/{folder}"
                     )
                     os.remove(filepath)
                     print(f"Successfully removed {filename} from local disk")
                 else:
-                    print(f"Failed to upload {filename} to {self.bucket}/{self.folder}")
+                    print(f"Failed to upload {filename} to {self.bucket}/{folder}")
+        
 
     def put_object(self, bucket, filepath, access_key):  # (S3 <- Server) Upload Pic
         """
@@ -67,9 +72,9 @@ class S3Bucket:
         location = self.s3.get_bucket_location(Bucket=bucket)["LocationConstraint"]
         return f"https://{bucket}.s3.{location}.amazonaws.com/{filename}.jpg"
     
-    def update_image(self, new_filepath,id):
+    def update_image(self, new_filepath,id,folder):
         # 1. 기존 파일 path
-        old_filename = f"{self.folder}/{id}.png"
+        old_filename = f"{folder}/{id}.png"
 
         # 2. 기존 파일 삭제
         self.s3.delete_object(Bucket=self.bucket,Key=old_filename)

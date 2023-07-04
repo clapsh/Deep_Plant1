@@ -20,6 +20,9 @@ class FireBase_:
 
         # 2. Making FireStorage Connection
         self.bucket = storage.bucket(keyId.firebase_bucket_address)
+        # 2-1. 저장할 이미지 디렉토리가 없다면 생성합니다.
+        os.makedirs('images/meats', exist_ok=True)
+        os.makedirs('images/qr_codes',exist_ok = True)
 
         # 3. Making Buffer Data (Firebase -> Flask Server )
         self.temp_data = dict()  # 버퍼
@@ -91,19 +94,22 @@ class FireBase_:
         # 'meat' 컬렉션의 문서 ID가 있는 리스트를 가져옵니다.
         items = self.fix_data_state["fix_data"]["meat"]
 
-        # 저장할 이미지 디렉토리가 없다면 생성합니다.
-        os.makedirs('images', exist_ok=True)
-
         for item_id in items:
             # Firebase Storage에서 해당 파일을 찾아 blob으로 가져옵니다.
-            blob = self.bucket.blob(f"{item_id}.png")
+            blob_meats = self.bucket.blob(f"meats/{item_id}.png")
+            blob_qr_codes = self.bucket.blob(f"qr_codes/{item_id}.png")
 
             # blob이 존재하는지 확인하고 존재하면 파일로 저장합니다.
-            if blob.exists():
-                blob.download_to_filename(f"./images/{item_id}.png")
+            if blob_meats.exists():
+                blob_meats.download_to_filename(f"./images/meats/{item_id}.png")
             else:
-                print(f"No such file: {item_id}.png")
-        
+                print(f"No such file: meats/{item_id}.png")
+
+            if blob_qr_codes.exists():
+                blob_qr_codes.download_to_filename(f"./images/qr_codes/{item_id}.png")
+            else:
+                print(f"No such file: qr_codes/{item_id}.png")
+                
     def server2firestore(self):  # Firestore에 data 넣기 (Firestore <- Flask Server)
         pass
 
