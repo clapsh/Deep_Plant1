@@ -110,8 +110,10 @@ class FireBase_:
             else:
                 print(f"No such file: qr_codes/{item_id}.png")
                 
-    def server2firestore(self):  # Firestore에 data 넣기 (Firestore <- Flask Server)
-        pass
+    def server2firestore(self,collection,document_id,data):  # Firestore에 data 넣기 (Firestore <- Flask Server)
+        doc_ref = self.firebase_db.collection(collection).document(document_id)
+        doc_ref.set(data,merge=True)
 
-    def server2firestorage(self):
-        pass
+    def server2firestorage(self,filepath,blob_name): # Firebase Storage에 image 데이터 넣기 (Storage <- Flask Server)
+        blob = self.bucket.blob(blob_name)
+        blob.upload_from_filename(filename=filepath,content_type="image/png")

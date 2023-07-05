@@ -3,10 +3,10 @@ import keyId
 # RDS Configuration
 config = {
     "aws_db": {
-        "user": "jeongseonghun",
-        "password": "",
-        "host": "localhost",
+        "user": keyId.rds_username,
+        "password": "qwer1234",
+        "host": keyId.rds_host,
         "port": "5432",  # Maria DB의 포트
-        "database": "postgres",
+        "database": keyId.rds_db_name,
     }
 }

@@ -390,7 +390,7 @@ class MyFlaskApp:
             abort(400, description="No data sent for update")
 
         # 2. Data 받기
-        update_data = request.json
+        update_data = request.json # {saveTime:"", butcheryYmd:"",,,}
 
         with self.app.app_context():
             # 3. 육류 DB 체크
@@ -425,10 +425,10 @@ class MyFlaskApp:
                         setattr(meat, field, new_value)
                 else:
                     raise BadRequest(f"Field '{field}' not in Meat")
-
             rds_db.session.commit()
-
-            return jsonify(self._to_dict(meat))
+        # 3. firestore update
+        self.firestore_conn.server2firestore('meat',id,update_data)
+        return jsonify(self._to_dict(meat))
 
     def _update_specific_meat_image(self, id, folder):  # 특정 육류 이미지 데이터 수정
         # Axios 라이브러리 post을 이용해 저장한 파일을 첨부했을 경우에 이용되는 API
@@ -450,6 +450,9 @@ class MyFlaskApp:
             # 2. S3에 저장
             new_filepath = os.path.join(UPDATE_IMAGE_FOLDER_PATH, filename)
             success = self.s3_conn.update_image(new_filepath, id, folder)
+
+            # 3. Firebase storage에 저장
+            self.firestore_conn.server2firestorage(new_filepath,f"{folder}/{filename}")
 
             if not success:
                 print(f"Failed to upload new image for ID: {id}")
@@ -534,7 +537,7 @@ def _make_response(data, url):  # For making response
     return response
 
 
-def convert2datetime(date_string, format):
+def convert2datetime(date_string, format): # For converting date string to datetime
     if format == 1:
         return datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
     elif format == 2:
@@ -591,7 +594,7 @@ def logout():
     return jsonify({"message": "Logged out successfully"}), 200
 
 
-def scheduler_function():
+def scheduler_function(): # 일정 주기마다 실행하는 함수
     myApp.firestore_conn.transferDbData()  # (FireStore -> Flask Server)
     myApp.s3_conn.transferImageData("meats")  # (Flask server(images folder) -> S3)
     myApp.s3_conn.transferImageData("qr_codes")  # (Flask server(images folder) -> S3)
@@ -608,5 +611,4 @@ if __name__ == "__main__":
     scheduler.start()
 
     # 2. Flask 서버 실행
-
     myApp.run()
