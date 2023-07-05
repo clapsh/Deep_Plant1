@@ -202,7 +202,6 @@ class MyFlaskApp:
                     meat_list = []
                     for m_id in value.get("meatList"):
                         try:
-
                             meat_list.append(Meat.query.get(m_id))
                         except:
                             print(f"Error adding Meat data - No meat id in DB{m_id}")
@@ -327,35 +326,14 @@ class MyFlaskApp:
         offset = int(offset)
         count = int(count)
         meat_data = (
-            Meat.query.options(
-                rds_db.joinedload(Meat.deepAging),
-                rds_db.joinedload(Meat.fresh),
-                rds_db.joinedload(Meat.heated),
-                rds_db.joinedload(Meat.tongue),
-                rds_db.joinedload(Meat.lab_data)
-            )
+            Meat.query.options()
             .order_by(Meat.saveTime.desc())
             .offset(offset * count)
             .limit(count)
             .all()
         )
-        result = []
-        for meat in meat_data:
-            meat_dict = self._to_dict(meat)
-
-            if meat.deepAging:
-                meat_dict['deepAging'] = self._to_dict(meat.deepAging)
-            if meat.fresh:
-                meat_dict['fresh'] = self._to_dict(meat.fresh)
-            if meat.heated:
-                meat_dict['heated'] = self._to_dict(meat.heated)
-            if meat.tongue:
-                meat_dict['tongue'] = self._to_dict(meat.tongue)
-            if meat.lab_data:
-                meat_dict['lab_data'] = self._to_dict(meat.lab_data)
-
-            result.append(meat_dict)
-
+        meat_result = [data[id] for data in meat_data]
+        result = {"len": Meat.query.count(), "meat_list": meat_result}
         return result
 
     def _get_specific_user_data(self, id):  # 특정 ID의 유저정보 요청
@@ -414,7 +392,7 @@ class MyFlaskApp:
             abort(400, description="No data sent for update")
 
         # 2. Data 받기
-        update_data = request.json # {saveTime:"", butcheryYmd:"",,,}
+        update_data = request.json  # {saveTime:"", butcheryYmd:"",,,}
 
         with self.app.app_context():
             # 3. 육류 DB 체크
@@ -451,7 +429,7 @@ class MyFlaskApp:
                     raise BadRequest(f"Field '{field}' not in Meat")
             rds_db.session.commit()
         # 3. firestore update
-        self.firestore_conn.server2firestore('meat',id,update_data)
+        self.firestore_conn.server2firestore("meat", id, update_data)
         return jsonify(self._to_dict(meat))
 
     def _update_specific_meat_image(self, id, folder):  # 특정 육류 이미지 데이터 수정
@@ -476,7 +454,7 @@ class MyFlaskApp:
             success = self.s3_conn.update_image(new_filepath, id, folder)
 
             # 3. Firebase storage에 저장
-            self.firestore_conn.server2firestorage(new_filepath,f"{folder}/{filename}")
+            self.firestore_conn.server2firestorage(new_filepath, f"{folder}/{filename}")
 
             if not success:
                 print(f"Failed to upload new image for ID: {id}")
@@ -561,7 +539,7 @@ def _make_response(data, url):  # For making response
     return response
 
 
-def convert2datetime(date_string, format): # For converting date string to datetime
+def convert2datetime(date_string, format):  # For converting date string to datetime
     if format == 1:
         return datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
     elif format == 2:
@@ -618,7 +596,7 @@ def logout():
     return jsonify({"message": "Logged out successfully"}), 200
 
 
-def scheduler_function(): # 일정 주기마다 실행하는 함수
+def scheduler_function():  # 일정 주기마다 실행하는 함수
     myApp.firestore_conn.transferDbData()  # (FireStore -> Flask Server)
     myApp.s3_conn.transferImageData("meats")  # (Flask server(images folder) -> S3)
     myApp.s3_conn.transferImageData("qr_codes")  # (Flask server(images folder) -> S3)
