@@ -327,12 +327,36 @@ class MyFlaskApp:
         offset = int(offset)
         count = int(count)
         meat_data = (
-            Meat.query.order_by(Meat.saveTime.desc())
+            Meat.query.options(
+                rds_db.joinedload(Meat.deepAging),
+                rds_db.joinedload(Meat.fresh),
+                rds_db.joinedload(Meat.heated),
+                rds_db.joinedload(Meat.tongue),
+                rds_db.joinedload(Meat.lab_data)
+            )
+            .order_by(Meat.saveTime.desc())
             .offset(offset * count)
             .limit(count)
             .all()
         )
-        return [self._to_dict(data) for data in meat_data]
+        result = []
+        for meat in meat_data:
+            meat_dict = self._to_dict(meat)
+
+            if meat.deepAging:
+                meat_dict['deepAging'] = self._to_dict(meat.deepAging)
+            if meat.fresh:
+                meat_dict['fresh'] = self._to_dict(meat.fresh)
+            if meat.heated:
+                meat_dict['heated'] = self._to_dict(meat.heated)
+            if meat.tongue:
+                meat_dict['tongue'] = self._to_dict(meat.tongue)
+            if meat.lab_data:
+                meat_dict['lab_data'] = self._to_dict(meat.lab_data)
+
+            result.append(meat_dict)
+
+        return result
 
     def _get_specific_user_data(self, id):  # 특정 ID의 유저정보 요청
         with self.app.app_context():
