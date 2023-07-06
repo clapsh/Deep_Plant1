@@ -70,9 +70,14 @@ class MyFlaskApp:
             id = request.args.get("id")
             offset = request.args.get("offset")
             count = request.args.get("count")
+            part_id = request.args.get("part_id")
             if id:
                 return _make_response(
                     self._get_specific_meat_data(id), "http://localhost:3000"
+                )
+            elif part_id:
+                return _make_response(
+                    self._get_specific_meat_data_part(part_id), "http://localhost:3000"
                 )
             elif offset and count:
                 return _make_response(
@@ -354,6 +359,17 @@ class MyFlaskApp:
                 ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meats/{meat_dict['id']}.png"
                 return jsonify(meat_dict)
 
+    def _get_specific_meat_data_part(self, part_id):    
+        len = Meat.query.count()
+        meat_list = self._get_range_meat_data(0, len)["meat_list"]
+
+        # Using list comprehension to filter meat_list
+        part_id_meat_list = [meat for meat in meat_list if part_id in meat]
+        result = []
+        for i in part_id_meat_list:
+            result.append(self._get_specific_meat_data(i).get_json())
+        return {part_id:result}
+
     def _get_range_meat_data(self, offset, count):  # 날짜를 기준으로 특정 범위의 meat data 요청
         offset = int(offset)
         count = int(count)
@@ -364,7 +380,7 @@ class MyFlaskApp:
             .limit(count)
             .all()
         )
-        meat_result = [data[id] for data in meat_data]
+        meat_result = [data.id for data in meat_data]
         result = {"len": Meat.query.count(), "meat_list": meat_result}
         return result
 
