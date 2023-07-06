@@ -20,6 +20,8 @@ from db_connect import (
     Normal,
     Researcher,
     Manager,
+    meat_user,
+    meat_user2,
 )  # RDS Connect
 import json  # For Using Json files
 from flask_login import login_user, logout_user, current_user, LoginManager  # For Login
@@ -101,6 +103,22 @@ class MyFlaskApp:
             else:
                 abort(400, description="No id Provided for upload image")
 
+        @self.app.route("/meat/delete", methods=["POST"])  # 5. meat data 삭제
+        def delete_meat_data():
+            id = request.args.get("id")
+            offset = request.args.get("offset")
+            count = request.args.get("count")
+            if id:  # 특정 id 삭제
+                return _make_response(
+                    self._delete_specific_meat_data(id), "http://localhost:3000"
+                )
+            elif offset and count:  # savetime 기준으로 offset * count 부터 count개 삭제
+                return _make_response(
+                    self._delete_range_meat_data(offset, count), "http://localhost:3000"
+                )
+            else:  # 전체 육류 데이터 삭제
+                return _make_response(self._delete_meat_data(), "http://localhost:3000")
+
         # 5. user database 요청 Routiong
         @self.app.route("/user", methods=["GET"])  # 1. 특정 유저 id의 유저 정보 요청
         def get_specific_user_data():
@@ -112,7 +130,7 @@ class MyFlaskApp:
             else:
                 return _make_response(self._get_user_data(), "http://localhost:3000")
 
-        @self.app.route("/user/update", methods=["POST"])
+        @self.app.route("/user/update", methods=["POST"])  # 2. 특정 유저 정보 업데이트
         def update_specific_user_data():
             id = request.args.get("id")
             if id:
@@ -123,7 +141,7 @@ class MyFlaskApp:
                 abort(400, description="No id Provided for Update User information")
 
     def transfer_data_to_rds(self):
-        print("3. Trasfer DB Data [flask server -> RDS Database]", datetime.now(), "\n")
+        print("3. Trasfer DB Data [flask server -> RDS Database]", datetime.now())
         """
         Flask server -> RDS
         Firebase에서 새로 저장된 데이터들은 각각 다음의 변수에 저장됩니다.
@@ -137,7 +155,14 @@ class MyFlaskApp:
         normal_data = self.firestore_conn.temp_normal_data
         researcher_data = self.firestore_conn.temp_researcher_data
         manager_data = self.firestore_conn.temp_manager_data
-
+        error_data = {
+            "fix_data": {
+                "meat": list(),
+                "users_1": list(),
+                "users_2": list(),
+                "users_3": list(),
+            }
+        }
         with self.app.app_context():
             for key, value in meat_data.items():
                 try:
@@ -194,6 +219,7 @@ class MyFlaskApp:
                     print(f"Meat data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding meat data: {e}\n")
+                    error_data["fix_data"]["meat"].append(key)
 
             # 2. Update Normal data to RDS
             for key, value in normal_data.items():
@@ -218,6 +244,7 @@ class MyFlaskApp:
                     print(f"Normal data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding Normal data: {e}\n")
+                    error_data["fix_data"]["users_1"].append(key)
 
             # 3. Update Researcher data to RDS
             for key, value in researcher_data.items():
@@ -250,6 +277,7 @@ class MyFlaskApp:
                     print(f"Researcher data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding Researcher data: {e}\n")
+                    error_data["fix_data"]["users_2"].append(key)
 
             # 4. Update Manager data to RDS
             for key, value in manager_data.items():
@@ -268,6 +296,7 @@ class MyFlaskApp:
                     print(f"Manager data added: {key} : {value}\n")
                 except Exception as e:
                     print(f"Error adding Manager data: {e}\n")
+                    error_data["fix_data"]["users_3"].append(key)
 
             # 5. Session commit 완료
             rds_db.session.commit()
@@ -275,8 +304,11 @@ class MyFlaskApp:
         self.firestore_conn.temp_normal_data = {}
         self.firestore_conn.temp_researcher_data = {}
         self.firestore_conn.temp_manager_data = {}
+        self.firestore_conn.server2firestore("meat", "0-0-0-0-0", error_data)
+        print(f"Error data(Rollback to Firebase {datetime.now()}: {error_data})\n")
         print(f"===============================================\n")
 
+    # 1. Meat DB API
     def _get_meat_data(self):  # 전체 meat data 요청
         with self.app.app_context():
             meats = Meat.query.all()
@@ -294,10 +326,10 @@ class MyFlaskApp:
                 # imagePath field
                 meat_dict[
                     "meat_imagePath"
-                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meats/{meat_dict['id']}"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meats/{meat_dict['id']}.png"
                 meat_dict[
                     "qr_imagePath"
-                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/qr_codes/{meat_dict['id']}"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/qr_codes/{meat_dict['id']}.png"
                 meat_list.append(meat_dict)
             return jsonify(meat_list)
 
@@ -319,7 +351,7 @@ class MyFlaskApp:
                 # imagePath field
                 meat_dict[
                     "imagePath"
-                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/{self.s3_conn.folder}/{meat_dict['id']}.png"
+                ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meats/{meat_dict['id']}.png"
                 return jsonify(meat_dict)
 
     def _get_range_meat_data(self, offset, count):  # 날짜를 기준으로 특정 범위의 meat data 요청
@@ -335,55 +367,6 @@ class MyFlaskApp:
         meat_result = [data[id] for data in meat_data]
         result = {"len": Meat.query.count(), "meat_list": meat_result}
         return result
-
-    def _get_specific_user_data(self, id):  # 특정 ID의 유저정보 요청
-        with self.app.app_context():
-            # 1. Fetch
-            user_data = User.query.get(id)
-
-            # 2. If no user data is found with the given ID
-            if user_data is None:
-                abort(404, description="No user data was found with the given ID")
-
-            # 3. Convert the SQLAlchemy User instance to a dictionary
-            user_dict = self._to_dict(user_data)
-
-            # 4. If the user type is 'normal' or 'researcher', convert meat list from SQLAlchemy objects to dictionaries
-            if user_data.type in ["normal", "researcher"]:
-                user_dict["meatList"] = [
-                    self._to_dict(meat) for meat in user_data.meatList
-                ]
-                if user_data.type == "researcher":
-                    user_dict["revisionMeatList"] = [
-                        self._to_dict(meat) for meat in user_data.revisionMeatList
-                    ]
-
-            return jsonify(user_dict)
-
-    def _get_user_data(self):  # 모든 유저 정보 반환
-        with self.app.app_context():
-            # 1. 모든 유저 정보 가져오기
-            all_users = User.query.all()
-
-            # 2. 구분해 반환 예정
-            user_data_by_type = {"normal": [], "researcher": [], "manager": []}
-
-            # 3. Convert
-            for user in all_users:
-                user_dict = self._to_dict(user)
-
-                if user.type in ["normal", "researcher"]:
-                    user_dict["meatList"] = [
-                        self._to_dict(meat) for meat in user.meatList
-                    ]
-                    if user.type == "researcher":
-                        user_dict["revisionMeatList"] = [
-                            self._to_dict(meat) for meat in user.revisionMeatList
-                        ]
-
-                user_data_by_type[user.type].append(user_dict)
-
-            return jsonify(user_data_by_type)
 
     def _update_specific_meat_data(self, id):  # 특정 육류 데이터 수정(db data만)
         # 전제: 관리번호는 죽어도 수정되지 않는다!!!
@@ -461,6 +444,101 @@ class MyFlaskApp:
         else:
             abort(400, description="Invalid file type, Only PNG files are allowed.")
 
+    def _delete_specific_meat_data(self, id):  # 특정 ID 육류 데이터 삭제
+        print(f"Delete data id:{id}")
+        with self.app.app_context():
+            # 육류 DB 체크
+            meat = Meat.query.get(id)
+
+            if meat is None:
+                abort(404, description="No meat data found with the given ID")
+
+            # Delete RDS
+            rds_db.session.delete(meat)
+            rds_db.session.commit()
+        # 2. S3 delete
+        test = "meats"
+        try:
+            self.s3_conn.delete_image("meats", id)
+            test = "qr_codes"
+            self.s3_conn.delete_image("qr_codes", id)
+            test = "meats"
+        except Exception as e:
+            print(f"S3 image delete failed {test}/{id}: {e}")
+        # 3. firestore delete
+        try:
+            self.firestore_conn.delete_from_firestore("meat", id)
+        except Exception as e:
+            print(f"firestore data delete failed {id} : {e}")
+        # 4. Firebase storage delete
+        try:
+            self.firestore_conn.delete_from_firestorage("meats", id)
+            self.firestore_conn.delete_from_firestorage("qr_codes", id)
+        except Exception as e:
+            print(f"Firestorage image delete failed {test}/{id} : {e}")
+
+        return jsonify(self._to_dict(meat))
+
+    def _delete_range_meat_data(self, offset, count):  # 특정 범위 ID 육류 데이터 삭제
+        result = self._get_range_meat_data(offset, count)["meat_list"]
+        for meat_id in result:
+            self._delete_specific_meat_data(meat_id)
+        return jsonify(result)
+
+    def _delete_meat_data(self):  # 전체 육류 데이터 삭제
+        len = Meat.query.count()
+        self._delete_range_meat_data(0, len)
+
+    # 2. User DB API
+    def _get_specific_user_data(self, id):  # 특정 ID의 유저정보 요청
+        with self.app.app_context():
+            # 1. Fetch
+            user_data = User.query.get(id)
+
+            # 2. If no user data is found with the given ID
+            if user_data is None:
+                abort(404, description="No user data was found with the given ID")
+
+            # 3. Convert the SQLAlchemy User instance to a dictionary
+            user_dict = self._to_dict(user_data)
+
+            # 4. If the user type is 'normal' or 'researcher', convert meat list from SQLAlchemy objects to dictionaries
+            if user_data.type in ["normal", "researcher"]:
+                user_dict["meatList"] = [
+                    self._to_dict(meat) for meat in user_data.meatList
+                ]
+                if user_data.type == "researcher":
+                    user_dict["revisionMeatList"] = [
+                        self._to_dict(meat) for meat in user_data.revisionMeatList
+                    ]
+
+            return jsonify(user_dict)
+
+    def _get_user_data(self):  # 모든 유저 정보 반환
+        with self.app.app_context():
+            # 1. 모든 유저 정보 가져오기
+            all_users = User.query.all()
+
+            # 2. 구분해 반환 예정
+            user_data_by_type = {"normal": [], "researcher": [], "manager": []}
+
+            # 3. Convert
+            for user in all_users:
+                user_dict = self._to_dict(user)
+
+                if user.type in ["normal", "researcher"]:
+                    user_dict["meatList"] = [
+                        self._to_dict(meat) for meat in user.meatList
+                    ]
+                    if user.type == "researcher":
+                        user_dict["revisionMeatList"] = [
+                            self._to_dict(meat) for meat in user.revisionMeatList
+                        ]
+
+                user_data_by_type[user.type].append(user_dict)
+
+            return jsonify(user_data_by_type)
+
     def _update_specific_user_data(self, id):  # 특정 유저 정보 업데이트
         # 1. 유효성 확인
         if not request.json:
@@ -520,6 +598,7 @@ class MyFlaskApp:
             response_data = new_user if change_to_type else old_user_data
             return jsonify(self._to_dict(response_data))
 
+    # 3. Utils
     def _to_dict(self, model):  # database 생성 메서드
         if model is None:
             return None

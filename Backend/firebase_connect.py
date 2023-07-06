@@ -1,6 +1,6 @@
 from flask import send_file
 import firebase_admin  # Firestore init
-from datetime import datetime # 시간 출력용
+from datetime import datetime  # 시간 출력용
 from firebase_admin import firestore, storage
 import keyId
 import io
@@ -21,14 +21,14 @@ class FireBase_:
         # 2. Making FireStorage Connection
         self.bucket = storage.bucket(keyId.firebase_bucket_address)
         # 2-1. 저장할 이미지 디렉토리가 없다면 생성합니다.
-        os.makedirs('images/meats', exist_ok=True)
-        os.makedirs('images/qr_codes',exist_ok = True)
+        os.makedirs("images/meats", exist_ok=True)
+        os.makedirs("images/qr_codes", exist_ok=True)
 
         # 3. Making Buffer Data (Firebase -> Flask Server )
         self.temp_data = dict()  # 버퍼
-        self.temp_normal_data = dict() # 일반
-        self.temp_researcher_data = dict() # 직원
-        self.temp_manager_data = dict() # 관리자
+        self.temp_normal_data = dict()  # 일반
+        self.temp_researcher_data = dict()  # 직원
+        self.temp_manager_data = dict()  # 관리자
         self.temp_meat_data = dict()
 
     def print_flask_database(self):
@@ -38,7 +38,7 @@ class FireBase_:
         print(f"transfer meat data: {self.temp_meat_data}")
 
     def transferDbData(self):
-        print("1. Trasfer DB&Image Data [Firebase -> Flask Server]",datetime.now())
+        print("1. Trasfer DB&Image Data [Firebase -> Flask Server]", datetime.now())
         # 1. 바뀐 데이터 확인
         self.firestoreCheck()
 
@@ -75,7 +75,9 @@ class FireBase_:
         self.fix_data_state = doc_ref.get().to_dict()
 
         # 2. 바뀐 데이터 수합했으면 비워야 한다.
-        doc_ref.update({"fix_data":{"users_1": [], "users_2": [], "users_3": [], "meat": []}})
+        doc_ref.update(
+            {"fix_data": {"users_1": [], "users_2": [], "users_3": [], "meat": []}}
+        )
 
     def firestore2server(
         self, collection
@@ -109,11 +111,30 @@ class FireBase_:
                 blob_qr_codes.download_to_filename(f"./images/qr_codes/{item_id}.png")
             else:
                 print(f"No such file: qr_codes/{item_id}.png")
-                
-    def server2firestore(self,collection,document_id,data):  # Firestore에 data 넣기 (Firestore <- Flask Server)
-        doc_ref = self.firebase_db.collection(collection).document(document_id)
-        doc_ref.set(data,merge=True)
 
-    def server2firestorage(self,filepath,blob_name): # Firebase Storage에 image 데이터 넣기 (Storage <- Flask Server)
+    def delete_from_firestore(self, collection, document_id):
+        doc_ref = self.firebase_db.collection(collection).document(document_id)
+        doc_ref.delete()
+
+    def delete_from_firestorage(self,folder,item_id):
+        # 1. blob 지정
+        blob= self.bucket.blob(f"{folder}/{item_id}.png")
+
+        # 2. delete blob
+        if blob.exists():
+            blob.delete()
+            print(f"Deleted file: {folder}/{item_id}.png")
+        else:
+            print(f"No such file to delete: {folder}/{item_id}.png")
+
+    def server2firestore(
+        self, collection, document_id, data
+    ):  # Firestore에 data 넣기 (Firestore <- Flask Server)
+        doc_ref = self.firebase_db.collection(collection).document(document_id)
+        doc_ref.set(data, merge=True)
+
+    def server2firestorage(
+        self, filepath, blob_name
+    ):  # Firebase Storage에 image 데이터 넣기 (Storage <- Flask Server)
         blob = self.bucket.blob(blob_name)
-        blob.upload_from_filename(filename=filepath,content_type="image/png")
+        blob.upload_from_filename(filename=filepath, content_type="image/png")

@@ -19,12 +19,24 @@ class Meat(rds_db.Model):
     butcheryYmd = rds_db.Column(DateTime, nullable=False)
 
     deepAging = rds_db.relationship(
-        "DeepAging", backref="meat", lazy=True, uselist=False
+        "DeepAging",
+        backref="meat",
+        lazy=True,
+        uselist=False,
+        cascade="all,delete-orphan",
     )
-    fresh = rds_db.relationship("Fresh", backref="meat", lazy=True, uselist=False)
-    heated = rds_db.relationship("Heated", backref="meat", lazy=True, uselist=False)
-    tongue = rds_db.relationship("Tongue", backref="meat", lazy=True, uselist=False)
-    lab_data = rds_db.relationship("LabData", backref="meat", lazy=True, uselist=False)
+    fresh = rds_db.relationship(
+        "Fresh", backref="meat", lazy=True, uselist=False, cascade="all,delete-orphan"
+    )
+    heated = rds_db.relationship(
+        "Heated", backref="meat", lazy=True, uselist=False, cascade="all,delete-orphan"
+    )
+    tongue = rds_db.relationship(
+        "Tongue", backref="meat", lazy=True, uselist=False, cascade="all,delete-orphan"
+    )
+    lab_data = rds_db.relationship(
+        "LabData", backref="meat", lazy=True, uselist=False, cascade="all,delete-orphan"
+    )
 
 
 class DeepAging(rds_db.Model):  # Deep Aging Table
@@ -102,8 +114,8 @@ meat_user2 = rds_db.Table(
 class Normal(User):
     __tablename__ = "normal"
     id = rds_db.Column(rds_db.String, rds_db.ForeignKey("user.id"), primary_key=True)
-    meatList = rds_db.relationship("Meat", secondary=meat_user, backref="normals")
 
+    meatList = rds_db.relationship("Meat", secondary=meat_user, backref="normal")
     __mapper_args__ = {
         "polymorphic_identity": "normal",
     }
