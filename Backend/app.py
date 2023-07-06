@@ -67,6 +67,9 @@ class MyFlaskApp:
         # 4. meat database 요청 Routing
         @self.app.route("/meat", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
+            # 1. data backup
+            self.scheduler_function()
+
             id = request.args.get("id")
             offset = request.args.get("offset")
             count = request.args.get("count")
@@ -88,6 +91,9 @@ class MyFlaskApp:
 
         @self.app.route("/meat/update", methods=["POST"])  # 3. 특정 육류 데이터 수정(db data만)
         def update_specific_meat_data():
+            # 1. data backup
+            self.scheduler_function()
+
             id = request.args.get("id")
             if id:
                 return _make_response(
@@ -98,6 +104,9 @@ class MyFlaskApp:
 
         @self.app.route("/meat/upload_image", methods=["POST"])  # 4. 특정 육류 이미지 데이터 수정
         def update_specific_meat_image():
+            # 1. data backup
+            self.scheduler_function()
+
             id = request.args.get("id")
             folder = request.args.get("folder")  # meats 이거나 qr_codes
             if id:
@@ -110,6 +119,9 @@ class MyFlaskApp:
 
         @self.app.route("/meat/delete", methods=["POST"])  # 5. meat data 삭제
         def delete_meat_data():
+            # 1. data backup
+            self.scheduler_function()
+
             id = request.args.get("id")
             offset = request.args.get("offset")
             count = request.args.get("count")
@@ -127,6 +139,9 @@ class MyFlaskApp:
         # 5. user database 요청 Routiong
         @self.app.route("/user", methods=["GET"])  # 1. 특정 유저 id의 유저 정보 요청
         def get_specific_user_data():
+            # 1. data backup
+            self.scheduler_function()
+
             id = request.args.get("id")
             if id:
                 return _make_response(
@@ -137,6 +152,9 @@ class MyFlaskApp:
 
         @self.app.route("/user/update", methods=["POST"])  # 2. 특정 유저 정보 업데이트
         def update_specific_user_data():
+            # 1. data backup
+            self.scheduler_function()
+
             id = request.args.get("id")
             if id:
                 return _make_response(
@@ -169,6 +187,7 @@ class MyFlaskApp:
             }
         }
         with self.app.app_context():
+            # 1. meat data
             for key, value in meat_data.items():
                 try:
                     saveTime = convert2datetime(value.get("saveTime"), 1)
@@ -315,6 +334,7 @@ class MyFlaskApp:
 
     # 1. Meat DB API
     def _get_meat_data(self):  # 전체 meat data 요청
+
         with self.app.app_context():
             meats = Meat.query.all()
             meat_list = []
@@ -624,6 +644,12 @@ class MyFlaskApp:
         aws_db = self.config["aws_db"]
         return f"postgresql://{aws_db['user']}:{aws_db['password']}@{aws_db['host']}:{aws_db['port']}/{aws_db['database']}"
 
+    def scheduler_function(self):  # 일정 주기마다 실행하는 함수
+        self.firestore_conn.transferDbData()  # (FireStore -> Flask Server)
+        self.s3_conn.transferImageData("meats")  # (Flask server(images folder) -> S3)
+        self.s3_conn.transferImageData("qr_codes")  # (Flask server(images folder) -> S3)
+        self.transfer_data_to_rds()  #  (FireStore -> RDS)
+
     def run(self, host="0.0.0.0", port=8080):  # server 구동
         self.app.run(host=host, port=port)
 
@@ -700,12 +726,5 @@ def scheduler_function():  # 일정 주기마다 실행하는 함수
 
 # Server 구동
 if __name__ == "__main__":
-    # 1. Background Fetch Data (FireStore -> Flask Server) , 30sec 주기
-    scheduler = BackgroundScheduler(daemon=True, timezone="Asia/Seoul")
-    scheduler.add_job(
-        scheduler_function, "interval", minutes=0.5
-    )  # 주기적 데이터 전송 firebase -> flask server
-    scheduler.start()
-
     # 2. Flask 서버 실행
     myApp.run()

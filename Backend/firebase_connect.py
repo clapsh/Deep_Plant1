@@ -116,9 +116,9 @@ class FireBase_:
         doc_ref = self.firebase_db.collection(collection).document(document_id)
         doc_ref.delete()
 
-    def delete_from_firestorage(self,folder,item_id):
+    def delete_from_firestorage(self, folder, item_id):
         # 1. blob 지정
-        blob= self.bucket.blob(f"{folder}/{item_id}.png")
+        blob = self.bucket.blob(f"{folder}/{item_id}.png")
 
         # 2. delete blob
         if blob.exists():
