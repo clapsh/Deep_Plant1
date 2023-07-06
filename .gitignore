@@ -45,6 +45,8 @@ app.*.map.json
 
 # Firebase files
 /Backend/serviceAccountKey.json
+/Backend/local_serviceAccountKey.json
+/Backend/deepplant_serviceAccountKey.json
 /Frontend/deep_plant_app/android/app/google-services.json
 
 # Server key file
