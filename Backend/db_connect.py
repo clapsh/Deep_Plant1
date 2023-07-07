@@ -100,22 +100,20 @@ class User(rds_db.Model):
 meat_user = rds_db.Table(
     "meat_user",
     rds_db.Column("meat_id", rds_db.String, rds_db.ForeignKey("meat.id")),
-    rds_db.Column("user_id", rds_db.String, rds_db.ForeignKey("normal.id")),
+    rds_db.Column("user_id", rds_db.String, rds_db.ForeignKey("user.id")),
 )
 
 # associate table for many-to-many relationship between Meat and Researcher
 meat_user2 = rds_db.Table(
     "meat_user2",
     rds_db.Column("meat_id", rds_db.String, rds_db.ForeignKey("meat.id")),
-    rds_db.Column("user_id", rds_db.String, rds_db.ForeignKey("researcher.id")),
+    rds_db.Column("user_id", rds_db.String, rds_db.ForeignKey("user.id")),
 )
 
 
 class Normal(User):
     __tablename__ = "normal"
     id = rds_db.Column(rds_db.String, rds_db.ForeignKey("user.id"), primary_key=True)
-
-    meatList = rds_db.relationship("Meat", secondary=meat_user, backref="normal")
     __mapper_args__ = {
         "polymorphic_identity": "normal",
     }
@@ -124,22 +122,6 @@ class Normal(User):
 class Researcher(User):
     __tablename__ = "researcher"
     id = rds_db.Column(rds_db.String, rds_db.ForeignKey("user.id"), primary_key=True)
-    meatList = rds_db.relationship(
-        "Meat",
-        secondary=meat_user,
-        primaryjoin=id == meat_user.c.user_id,
-        secondaryjoin=Meat.id == meat_user.c.meat_id,
-        backref="researchers",
-        lazy="dynamic",
-    )
-    revisionMeatList = rds_db.relationship(
-        "Meat",
-        secondary=meat_user2,
-        primaryjoin=id == meat_user2.c.user_id,
-        secondaryjoin=Meat.id == meat_user2.c.meat_id,
-        backref="revision_researchers",
-        lazy="dynamic",
-    )
 
     __mapper_args__ = {
         "polymorphic_identity": "researcher",
@@ -150,7 +132,12 @@ class Manager(User):
     __tablename__ = "manager"
     id = rds_db.Column(rds_db.String, rds_db.ForeignKey("user.id"), primary_key=True)
     pwd = rds_db.Column(rds_db.String, nullable=False)  # 암호화 완료
-
     __mapper_args__ = {
         "polymorphic_identity": "manager",
     }
+
+
+User.meatList = rds_db.relationship("Meat", secondary=meat_user, backref="users")
+User.revisionMeatList = rds_db.relationship(
+    "Meat", secondary=meat_user2, backref="revision_users"
+)

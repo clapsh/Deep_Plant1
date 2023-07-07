@@ -187,7 +187,7 @@ class MyFlaskApp:
             }
         }
         with self.app.app_context():
-            # 1. meat data
+            # 1. Update Meat data to RDS
             for key, value in meat_data.items():
                 try:
                     saveTime = convert2datetime(value.get("saveTime"), 1)
@@ -244,6 +244,7 @@ class MyFlaskApp:
                 except Exception as e:
                     print(f"Error adding meat data: {e}\n")
                     error_data["fix_data"]["meat"].append(key)
+            rds_db.session.commit()
 
             # 2. Update Normal data to RDS
             for key, value in normal_data.items():
@@ -269,6 +270,7 @@ class MyFlaskApp:
                 except Exception as e:
                     print(f"Error adding Normal data: {e}\n")
                     error_data["fix_data"]["users_1"].append(key)
+            rds_db.session.commit()
 
             # 3. Update Researcher data to RDS
             for key, value in researcher_data.items():
@@ -302,6 +304,7 @@ class MyFlaskApp:
                 except Exception as e:
                     print(f"Error adding Researcher data: {e}\n")
                     error_data["fix_data"]["users_2"].append(key)
+            rds_db.session.commit()
 
             # 4. Update Manager data to RDS
             for key, value in manager_data.items():
@@ -321,8 +324,6 @@ class MyFlaskApp:
                 except Exception as e:
                     print(f"Error adding Manager data: {e}\n")
                     error_data["fix_data"]["users_3"].append(key)
-
-            # 5. Session commit 완료
             rds_db.session.commit()
         self.firestore_conn.temp_meat_data = {}
         self.firestore_conn.temp_normal_data = {}
@@ -334,7 +335,6 @@ class MyFlaskApp:
 
     # 1. Meat DB API
     def _get_meat_data(self):  # 전체 meat data 요청
-
         with self.app.app_context():
             meats = Meat.query.all()
             meat_list = []
@@ -379,7 +379,7 @@ class MyFlaskApp:
                 ] = f"https://deep-plant-flask-server.s3.ap-northeast-2.amazonaws.com/meats/{meat_dict['id']}.png"
                 return jsonify(meat_dict)
 
-    def _get_specific_meat_data_part(self, part_id):    
+    def _get_specific_meat_data_part(self, part_id):  # 관리번호의 부분만으로 해당하는 육류데이터 넘기기
         len = Meat.query.count()
         meat_list = self._get_range_meat_data(0, len)["meat_list"]
 
@@ -388,7 +388,7 @@ class MyFlaskApp:
         result = []
         for i in part_id_meat_list:
             result.append(self._get_specific_meat_data(i).get_json())
-        return {part_id:result}
+        return {part_id: result}
 
     def _get_range_meat_data(self, offset, count):  # 날짜를 기준으로 특정 범위의 meat data 요청
         offset = int(offset)
@@ -536,16 +536,17 @@ class MyFlaskApp:
                 abort(404, description="No user data was found with the given ID")
 
             # 3. Convert the SQLAlchemy User instance to a dictionary
-            user_dict = self._to_dict(user_data)
+            user_dict = user_data.__dict__.copy()
+            user_dict.pop("_sa_instance_state", None)
 
             # 4. If the user type is 'normal' or 'researcher', convert meat list from SQLAlchemy objects to dictionaries
-            if user_data.type in ["normal", "researcher"]:
+            if user_data.type in ["normal", "researcher", "manager"]:
                 user_dict["meatList"] = [
-                    self._to_dict(meat) for meat in user_data.meatList
+                    self._to_dict(meat)["id"] for meat in user_data.meatList
                 ]
-                if user_data.type == "researcher":
+                if user_data.type == "researcher" or user_data.type == "manager":
                     user_dict["revisionMeatList"] = [
-                        self._to_dict(meat) for meat in user_data.revisionMeatList
+                        self._to_dict(meat)["id"] for meat in user_data.revisionMeatList
                     ]
 
             return jsonify(user_dict)
@@ -560,15 +561,15 @@ class MyFlaskApp:
 
             # 3. Convert
             for user in all_users:
-                user_dict = self._to_dict(user)
-
+                user_dict = user.__dict__.copy()
+                user_dict.pop("_sa_instance_state", None)
                 if user.type in ["normal", "researcher"]:
                     user_dict["meatList"] = [
-                        self._to_dict(meat) for meat in user.meatList
+                        self._to_dict(meat)["id"] for meat in user.meatList
                     ]
                     if user.type == "researcher":
                         user_dict["revisionMeatList"] = [
-                            self._to_dict(meat) for meat in user.revisionMeatList
+                            self._to_dict(meat)["id"] for meat in user.revisionMeatList
                         ]
 
                 user_data_by_type[user.type].append(user_dict)
@@ -638,16 +639,23 @@ class MyFlaskApp:
     def _to_dict(self, model):  # database 생성 메서드
         if model is None:
             return None
-        return {c.name: getattr(model, c.name) for c in model.__table__.columns}
+        # Also includes related objects
+        result = {c.name: getattr(model, c.name) for c in model.__table__.columns}
+
+        return result
 
     def _create_sqlalchemy_uri(self):  # uri 생성
         aws_db = self.config["aws_db"]
         return f"postgresql://{aws_db['user']}:{aws_db['password']}@{aws_db['host']}:{aws_db['port']}/{aws_db['database']}"
 
     def scheduler_function(self):  # 일정 주기마다 실행하는 함수
-        self.firestore_conn.transferDbData()  # (FireStore -> Flask Server)
-        self.s3_conn.transferImageData("meats")  # (Flask server(images folder) -> S3)
-        self.s3_conn.transferImageData("qr_codes")  # (Flask server(images folder) -> S3)
+        self.firestore_conn.transferDbData()  # 1. (FireStore -> Flask Server)
+        self.s3_conn.transferImageData(
+            "meats"
+        )  # 2. (Flask server(images folder) -> S3)
+        self.s3_conn.transferImageData(
+            "qr_codes"
+        )  # 3. (Flask server(images folder) -> S3)
         self.transfer_data_to_rds()  #  (FireStore -> RDS)
 
     def run(self, host="0.0.0.0", port=8080):  # server 구동
