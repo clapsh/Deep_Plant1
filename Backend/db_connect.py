@@ -1,143 +1,141 @@
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine, DateTime
-from sqlalchemy.pool import Pool
-
-rds_db = SQLAlchemy()
-
-
-class Meat(rds_db.Model):
-    id = rds_db.Column(rds_db.String, primary_key=True)
-    email = rds_db.Column(rds_db.String, nullable=False)
-    saveTime = rds_db.Column(DateTime, nullable=False)
-    traceNumber = rds_db.Column(rds_db.String, nullable=False)
-    species = rds_db.Column(rds_db.String, nullable=False)
-    l_division = rds_db.Column(rds_db.String, nullable=False)
-    s_division = rds_db.Column(rds_db.String, nullable=False)
-    gradeNm = rds_db.Column(rds_db.String, nullable=False)
-    farmAddr = rds_db.Column(rds_db.String, nullable=False)
-    butcheryPlaceNm = rds_db.Column(rds_db.String, nullable=False)
-    butcheryYmd = rds_db.Column(DateTime, nullable=False)
-
-    deepAging = rds_db.relationship(
-        "DeepAging",
-        backref="meat",
-        lazy=True,
-        uselist=False,
-        cascade="all,delete-orphan",
-    )
-    fresh = rds_db.relationship(
-        "Fresh", backref="meat", lazy=True, uselist=False, cascade="all,delete-orphan"
-    )
-    heated = rds_db.relationship(
-        "Heated", backref="meat", lazy=True, uselist=False, cascade="all,delete-orphan"
-    )
-    tongue = rds_db.relationship(
-        "Tongue", backref="meat", lazy=True, uselist=False, cascade="all,delete-orphan"
-    )
-    lab_data = rds_db.relationship(
-        "LabData", backref="meat", lazy=True, uselist=False, cascade="all,delete-orphan"
-    )
-
-
-class DeepAging(rds_db.Model):  # Deep Aging Table
-    id = rds_db.Column(rds_db.String, rds_db.ForeignKey("meat.id"), primary_key=True)
-    period = rds_db.Column(rds_db.PickleType, nullable=True)
-
-
-class Fresh(rds_db.Model):  # 신선육 관능 데이터
-    id = rds_db.Column(rds_db.String, rds_db.ForeignKey("meat.id"), primary_key=True)
-    marbling = rds_db.Column(rds_db.Float, nullable=True)
-    color = rds_db.Column(rds_db.Float, nullable=True)
-    texture = rds_db.Column(rds_db.Float, nullable=True)
-    surfaceMoisture = rds_db.Column(rds_db.Float, nullable=True)
-    total = rds_db.Column(rds_db.Float, nullable=True)
-
-
-class Heated(rds_db.Model):  # 가열육 관능 데이터
-    id = rds_db.Column(rds_db.String, rds_db.ForeignKey("meat.id"), primary_key=True)
-    flavor = rds_db.Column(rds_db.Float, nullable=True)
-    juiciness = rds_db.Column(rds_db.Float, nullable=True)
-    tenderness = rds_db.Column(rds_db.Float, nullable=True)
-    umami = rds_db.Column(rds_db.Float, nullable=True)
-    palability = rds_db.Column(rds_db.Float, nullable=True)
-
-
-class Tongue(rds_db.Model):  # 전자혀 데이터
-    id = rds_db.Column(rds_db.String, rds_db.ForeignKey("meat.id"), primary_key=True)
-    sourness = rds_db.Column(rds_db.Float, nullable=True)
-    bitterness = rds_db.Column(rds_db.Float, nullable=True)
-    umami = rds_db.Column(rds_db.Float, nullable=True)
-    richness = rds_db.Column(rds_db.Float, nullable=True)
-
-
-class LabData(rds_db.Model):  # 실험데이터
-    id = rds_db.Column(rds_db.String, rds_db.ForeignKey("meat.id"), primary_key=True)
-    L = rds_db.Column(rds_db.Float, nullable=True)
-    a = rds_db.Column(rds_db.Float, nullable=True)
-    b = rds_db.Column(rds_db.Float, nullable=True)
-    DL = rds_db.Column(rds_db.Float, nullable=True)
-    CL = rds_db.Column(rds_db.Float, nullable=True)
-    RW = rds_db.Column(rds_db.Float, nullable=True)
-    ph = rds_db.Column(rds_db.Float, nullable=True)
-    WBSF = rds_db.Column(rds_db.Float, nullable=True)
-    cardepsin_activity = rds_db.Column(rds_db.Float, nullable=True)
-    MFI = rds_db.Column(rds_db.Float, nullable=True)
-
-
-class User(rds_db.Model):
-    __tablename__ = "user"
-    id = rds_db.Column(rds_db.String, primary_key=True)
-    lastLogin = rds_db.Column(DateTime, nullable=False)
-    name = rds_db.Column(rds_db.String, nullable=False)
-    company = rds_db.Column(rds_db.String, nullable=True)
-    position = rds_db.Column(rds_db.String, nullable=True)
-    type = rds_db.Column(rds_db.String(50))
-
-    __mapper_args__ = {"polymorphic_identity": "user", "polymorphic_on": type}
-
-
-# associate table for many-to-many relationship between Meat and Normal
-meat_user = rds_db.Table(
-    "meat_user",
-    rds_db.Column("meat_id", rds_db.String, rds_db.ForeignKey("meat.id")),
-    rds_db.Column("user_id", rds_db.String, rds_db.ForeignKey("user.id")),
+from sqlalchemy import (
+    Table,
+    Column,
+    Integer,
+    String,
+    Float,
+    DateTime,
+    ForeignKey,
+    MetaData,
+    create_engine,
 )
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declarative_base
 
-# associate table for many-to-many relationship between Meat and Researcher
-meat_user2 = rds_db.Table(
-    "meat_user2",
-    rds_db.Column("meat_id", rds_db.String, rds_db.ForeignKey("meat.id")),
-    rds_db.Column("user_id", rds_db.String, rds_db.ForeignKey("user.id")),
-)
+Base = declarative_base()
 
 
-class Normal(User):
-    __tablename__ = "normal"
-    id = rds_db.Column(rds_db.String, rds_db.ForeignKey("user.id"), primary_key=True)
-    __mapper_args__ = {
-        "polymorphic_identity": "normal",
-    }
+class Species(Base):
+    __tablename__ = "species"
+    id = Column(Integer, primary_key=True)
+    value = Column(String(255))
 
 
-class Researcher(User):
-    __tablename__ = "researcher"
-    id = rds_db.Column(rds_db.String, rds_db.ForeignKey("user.id"), primary_key=True)
-
-    __mapper_args__ = {
-        "polymorphic_identity": "researcher",
-    }
+class LargeDivision(Base):
+    __tablename__ = "largeDivision"
+    id = Column(Integer, primary_key=True)
+    value = Column(String(255))
 
 
-class Manager(User):
-    __tablename__ = "manager"
-    id = rds_db.Column(rds_db.String, rds_db.ForeignKey("user.id"), primary_key=True)
-    pwd = rds_db.Column(rds_db.String, nullable=False)  # 암호화 완료
-    __mapper_args__ = {
-        "polymorphic_identity": "manager",
-    }
+class SmallDivision(Base):
+    __tablename__ = "smallDivision"
+    id = Column(Integer, primary_key=True)
+    value = Column(String(255))
 
 
-User.meatList = rds_db.relationship("Meat", secondary=meat_user, backref="users")
-User.revisionMeatList = rds_db.relationship(
-    "Meat", secondary=meat_user2, backref="revision_users"
-)
+class Probexpt(Base):
+    __tablename__ = "probexpt"
+    id = Column(String(255), ForeignKey("meat.id"), primary_key=True)
+    seqno = Column(Integer)
+
+
+class FreshmeatSenseval(Base):
+    __tablename__ = "freshmeatSenseval"
+    id = Column(String(255), ForeignKey("meat.id"), primary_key=True)
+    seqno = Column(Integer)
+
+
+class HeatedmeatSenseval(Base):
+    __tablename__ = "heatedmeatSenseval"
+    id = Column(String(255), ForeignKey("meat.id"), primary_key=True)
+    seqno = Column(Integer)
+
+
+class Meat(Base):
+    __tablename__ = "meat"
+    id = Column(String(255), primary_key=True)
+    userId = Column(String(255))
+    createdAt = Column(DateTime)
+    traceNumber = Column(String(255))
+    farmAddr = Column(String(255))
+    butcheryPlaceNm = Column(String(255))
+    butcheryYmd = Column(DateTime)
+    birthYmd = Column(DateTime)
+    sexType = Column(Integer)
+    species = Column(Integer, ForeignKey("species.id"))
+    largeDivision = Column(Integer, ForeignKey("largeDivision.id"))
+    smallDivision = Column(Integer, ForeignKey("smallDivision.id"))
+    probexpt_seqno = Column(Integer)
+
+
+class HistoryFreshmeatSenseval(Base):
+    __tablename__ = "historyFreshmeatSenseval"
+    id = Column(Integer, ForeignKey("freshmeatSenseval.seqno"), primary_key=True)
+    createdAt = Column(DateTime)
+    freshMeatId = Column(
+        String(255), ForeignKey("freshmeatSenseval.id"), primary_key=True
+    )
+    period = Column(Integer)
+    marbling = Column(Float)
+    color = Column(Float)
+    texture = Column(Float)
+    surfaceMoisture = Column(Float)
+    total = Column(Float)
+
+
+class HistoryHeatedmeatSenseval(Base):
+    __tablename__ = "historyHeatedmeatSenseval"
+    id = Column(Integer, ForeignKey("heatedmeatSenseval.seqno"), primary_key=True)
+    createdAt = Column(DateTime)
+    period = Column(Integer)
+    heatedMeatId = Column(
+        String(255), ForeignKey("heatedmeatSenseval.id"), primary_key=True
+    )
+    flavor = Column(Float)
+    juiciness = Column(Float)
+    tenderness = Column(Float)
+    umami = Column(Float)
+    palability = Column(Float)
+
+
+class HistoryProbexptSenseval(Base):
+    __tablename__ = "historyProbexptSenseval"
+    id = Column(Integer, ForeignKey("probexpt.seqno"), primary_key=True)
+    createdAt = Column(DateTime)
+    userId = Column(String(255))
+    period = Column(Integer)
+    probexptId = Column(String(255), ForeignKey("probexpt.id"), primary_key=True)
+    L = Column(Float)
+    a = Column(Float)
+    b = Column(Float)
+    DL = Column(Float)
+    CL = Column(Float)
+    RW = Column(Float)
+    ph = Column(Float)
+    WBSF = Column(Float)
+    cardepsin_activity = Column(Float)
+    MFI = Column(Float)
+    Collagen = Column(Float)
+    sourness = Column(Float)
+    bitterness = Column(Float)
+    umami = Column(Float)
+    richness = Column(Float)
+
+
+class UserType(Base):
+    __tablename__ = "userType"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255))
+
+
+class User(Base):
+    __tablename__ = "_user"
+    userId = Column(String(255), primary_key=True)
+    createdAt = Column(DateTime)
+    updatedAt = Column(DateTime)
+    loginAt = Column(DateTime)
+    password = Column(String(255))
+    name = Column(String(255))
+    company = Column(String(255))
+    jobTitle = Column(String(255))
+    type = Column(Integer, ForeignKey("userType.id"))
