@@ -52,7 +52,7 @@ app.*.map.json
 # Server key file
 /Backend/ec2_server/flaskServer.pem
 /Backend/keyId.py
-
+/Backend/temp.py
 
 # dotenv environment variable files
 .env
