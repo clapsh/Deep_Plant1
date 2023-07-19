@@ -151,7 +151,7 @@ class MyFlaskApp:
             result.append(self._get_specific_meat_data(i).get_json())
         return jsonify({part_id: result})
 
-    def _get_range_meat_data(self, offset, count):  # 
+    def _get_range_meat_data(self, offset, count):  #
         offset = int(offset)
         count = int(count)
         meat_data = (
@@ -404,6 +404,30 @@ def update():
         return jsonify({"message": "User Update Failed"}), 401
     rds_db.session.commit()
     return jsonify({"message": "User Update successfully"}), 201
+
+
+@myApp.app.route("/user/login", methods=["GET"])
+def login():
+    id = request.args.get("id")
+    user = User.query.filter_by(userId=id).first()
+    if user is None:
+        return jsonify({f"message": "No user data in Database(userId:{id})"}), 404
+    user.loginAt = datetime.now()
+    rds_db.session.commit()
+    user_info = to_dict(user)
+    user_info["type"] = UserType.query.filter_by(id=user_info["type"]).first().name
+
+    return jsonify({"message": "Logged in successfully", "user": user_info}), 200
+
+
+@myApp.app.route("/user/duplicate_check", methods=["GET"])
+def login():
+    id = request.args.get("id")
+    user = User.query.filter_by(userId=id).first()
+    if user is not None:
+        return jsonify({f"message": f"No duplicated Item (userId:{id})"}), 200
+    else:
+        return jsonify({"message": f"Duplicated Item (userId:{id}"}), 404
 
 
 @myApp.app.route("/user/login", methods=["GET"])
