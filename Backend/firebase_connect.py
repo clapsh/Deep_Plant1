@@ -21,63 +21,10 @@ class FireBase_:
         # 2. Making FireStorage Connection
         self.bucket = storage.bucket(keyId.firebase_bucket_address)
         # 2-1. 저장할 이미지 디렉토리가 없다면 생성합니다.
-        os.makedirs("images/meats", exist_ok=True)
+        os.makedirs("images/sensory_evals", exist_ok=True)
         os.makedirs("images/qr_codes", exist_ok=True)
+        os.makedirs("images/heatedmeat_sensory_evals", exist_ok=True)
 
-        # 3. Making Buffer Data (Firebase -> Flask Server )
-        self.temp_data = dict()  # 버퍼
-        self.temp_normal_data = dict()  # 일반
-        self.temp_researcher_data = dict()  # 직원
-        self.temp_manager_data = dict()  # 관리자
-        self.temp_meat_data = dict()
-
-    def print_flask_database(self):
-        print(f"transfer normal data: {self.temp_normal_data}")
-        print(f"transfer researcher data: {self.temp_researcher_data}")
-        print(f"transfer manager data: {self.temp_manager_data}")
-        print(f"transfer meat data: {self.temp_meat_data}")
-
-    def transferDbData(self):
-        print("1. Trasfer DB&Image Data [Firebase -> Flask Server]", datetime.now())
-        # 1. 바뀐 데이터 확인
-        self.firestoreCheck()
-
-        # 2. 데이터 가져오기 (firestore -> Flask Server)
-        if self.fix_data_state["fix_data"]["users_1"]:
-            # 1. firestore -> server 가져오기
-            self.firestore2server("users_1")
-            # 2. 버퍼에 있는 데이터 채워두기
-            self.temp_normal_data = self.temp_data
-        if self.fix_data_state["fix_data"]["users_2"]:
-            # 1. firestore -> server 가져오기
-            self.firestore2server("users_2")
-            # 2. 버퍼에 있는 데이터 채워두기
-            self.temp_researcher_data = self.temp_data
-        if self.fix_data_state["fix_data"]["users_3"]:
-            # 1. firestore -> server 가져오기
-            self.firestore2server("users_3")
-            # 2. 버퍼에 있는 데이터 채워두기
-            self.temp_manager_data = self.temp_data
-        if self.fix_data_state["fix_data"]["meat"]:
-            # 1. firestore -> server 가져오기
-            self.firestore2server("meat")
-            # 2. 버퍼에 있는 데이터 채워두기
-            self.temp_meat_data = self.temp_data
-            # 3. fire storage -> server
-            self.firestorage2server()
-
-        # 3. 데이터 AWS RDS, S3에 저장하기(Flask Server -> S3 or RDS)
-        self.print_flask_database()
-
-    def firestoreCheck(self):  # Firestore Data 바뀐게 있는지 확인하는 method
-        # 1. 0-0-0-0-0 document에서 바뀐 데이터 수합
-        doc_ref = self.firebase_db.collection("meat").document("0-0-0-0-0")
-        self.fix_data_state = doc_ref.get().to_dict()
-
-        # 2. 바뀐 데이터 수합했으면 비워야 한다.
-        doc_ref.update(
-            {"fix_data": {"users_1": [], "users_2": [], "users_3": [], "meat": []}}
-        )
 
     def firestore2server(
         self, collection

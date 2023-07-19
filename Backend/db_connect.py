@@ -53,6 +53,16 @@ class SexType(rds_db.Model):
     id = rds_db.Column(rds_db.Integer, primary_key=True)
     value = rds_db.Column(rds_db.String(255))
 
+class StatusType(rds_db.Model):
+    """
+    0: 대기중
+    1: 반려
+    2: 승인
+    """
+    __tablename__ = "statusType"
+    id = rds_db.Column(rds_db.Integer, primary_key=True)
+    value = rds_db.Column(rds_db.String(255))
+
 
 class Meat(rds_db.Model):
     __tablename__ = "meat"
@@ -67,6 +77,7 @@ class Meat(rds_db.Model):
         rds_db.Integer, rds_db.ForeignKey("category.id"), nullable=False
     )
     gradeNum = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("gradeNum.id"))
+    # statusType = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("statusType.id"),default = 0)
 
     # 3. Open API 및 관리번호 생성시간
     createdAt = rds_db.Column(DateTime, nullable=False)
@@ -188,6 +199,10 @@ class DeepAging(rds_db.Model):
 
 
 class UserType(rds_db.Model):
+    """
+    (id, name)
+    = (0,"Normal"),(1,"Researcher"),(2,"Manager"),(3,None)
+    """
     __tablename__ = "userType"
     id = rds_db.Column(rds_db.Integer, primary_key=True)
     name = rds_db.Column(rds_db.String(255))

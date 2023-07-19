@@ -166,7 +166,9 @@ class MyFlaskApp:
         return jsonify(result)
 
     def _get_meat_data(self):
-        return self._get_range_meat_data(0, Meat.query.count())["meat_list"]
+        response = self._get_range_meat_data(0, Meat.query.count())
+        data = response.get_json()
+        return jsonify(data["meat_list"])
 
     def _add_specific_meat_data(self):  # 육류 데이터 추가
         # 1. Data Valid Check
@@ -299,39 +301,6 @@ class MyFlaskApp:
     # 2. User DB API
     # 3. Utils
 
-    def transfer_meat_image(self, id, new_meat):
-        """
-        Firebase Storage -> S3
-        Params
-        1. id: meat.id
-        2. new_meat: New Meat data object
-        Return
-        None
-        """
-        try:
-            if not self.firestore_conn.firestorage2server(
-                "meats", id
-            ) or not self.s3_conn.server2s3("meats", id):
-                new_meat.meat_imagePath = None
-                raise Exception("Failed to transfer meat image")
-
-            new_meat.meat_imagePath = self.s3_conn.get_image_url(
-                self.s3_conn.bucket, f"meats/{id}"
-            )
-
-            if not self.firestore_conn.firestorage2server(
-                "qr_codes", id
-            ) or not self.s3_conn.server2s3("qr_codes", id):
-                new_meat.qr_imagePath = None
-                raise Exception("Failed to transfer QR code image")
-
-            new_meat.qr_imagePath = self.s3_conn.get_image_url(
-                self.s3_conn.bucket, f"qr_codes/{id}"
-            )
-        except Exception as e:
-            rds_db.session.rollback()
-            abort(404, description=e)
-
     def transfer_folder_image(self, id, new_meat, folder):
         """
         Firebase Storage -> S3
@@ -381,6 +350,28 @@ login_manager.init_app(myApp.app)
 def load_user(user_id):
     return User.query.get(user_id)
 
+@myApp.app.route("/user", methods=["GET"])
+def get_users_by_type():
+    # UserType 별로 분류될 유저 정보를 담을 딕셔너리
+    user_dict = {}
+
+    # 모든 유저 정보를 조회
+    users = User.query.all()
+
+    # 조회된 유저들에 대하여
+    for user in users:
+        # 해당 유저의 UserType을 조회
+        user_type = UserType.query.get(user.type).name
+
+        # user_dict에 해당 UserType key가 없다면, 새로운 리스트 생성
+        if user_type not in user_dict:
+            user_dict[user_type] = []
+        
+        # UserType에 해당하는 key의 value 리스트에 유저 id 추가
+        user_dict[user_type].append(user.userId)
+        
+    return jsonify(user_dict)
+
 
 @myApp.app.route("/user/register", methods=["POST"])
 def register():
@@ -410,7 +401,6 @@ def update():
 def duplicate_check():
     id = request.args.get("id")
     user = User.query.filter_by(userId=id).first()
-    print(user)
     if user is None:
         return 200
     else:
