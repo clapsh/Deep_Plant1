@@ -407,7 +407,7 @@ def update():
 
 
 @myApp.app.route("/user/duplicate_check", methods=["GET"])
-def login():
+def duplicate_check():
     id = request.args.get("id")
     user = User.query.filter_by(userId=id).first()
     if user is not None:
