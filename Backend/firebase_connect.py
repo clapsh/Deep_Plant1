@@ -92,25 +92,24 @@ class FireBase_:
             doc = doc_ref.document(i).get().to_dict()
             self.temp_data[i] = doc
 
-    def firestorage2server(self):
-        # 'meat' 컬렉션의 문서 ID가 있는 리스트를 가져옵니다.
-        items = self.fix_data_state["fix_data"]["meat"]
+    def firestorage2server(self, type, item_id):
+        """
+        Firebase Storage -> Flask server
+        Params
+        1. type : "meats" or "qr_codes"
+        2. item_id: meat.id (육류 관리번호)
 
-        for item_id in items:
-            # Firebase Storage에서 해당 파일을 찾아 blob으로 가져옵니다.
-            blob_meats = self.bucket.blob(f"meats/{item_id}.png")
-            blob_qr_codes = self.bucket.blob(f"qr_codes/{item_id}.png")
-
-            # blob이 존재하는지 확인하고 존재하면 파일로 저장합니다.
-            if blob_meats.exists():
-                blob_meats.download_to_filename(f"./images/meats/{item_id}.png")
-            else:
-                print(f"No such file: meats/{item_id}.png")
-
-            if blob_qr_codes.exists():
-                blob_qr_codes.download_to_filename(f"./images/qr_codes/{item_id}.png")
-            else:
-                print(f"No such file: qr_codes/{item_id}.png")
+        Return
+        1. True: 전송 성공
+        2. False: 전송 실패
+        """
+        blob = self.bucket.blob(f"{type}/{item_id}.png")
+        if blob.exists():
+            blob.download_to_filename(f"./images/{type}/{item_id}.png")
+            return True
+        else:
+            print(f"No such file in Firebase Storage: {type}/{item_id}.png")
+            return False
 
     def delete_from_firestore(self, collection, document_id):
         doc_ref = self.firebase_db.collection(collection).document(document_id)

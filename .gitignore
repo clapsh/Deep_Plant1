@@ -50,9 +50,9 @@ app.*.map.json
 /Frontend/deep_plant_app/android/app/google-services.json
 
 # Server key file
-/Backend/ec2_server/flaskServer.pem
+/Backend/ec2_server/web.pem
 /Backend/keyId.py
-/Backend/temp.py
+/Backend/temp.txt
 
 # dotenv environment variable files
 .env
