@@ -406,20 +406,6 @@ def update():
     return jsonify({"message": "User Update successfully"}), 201
 
 
-@myApp.app.route("/user/login", methods=["GET"])
-def login():
-    id = request.args.get("id")
-    user = User.query.filter_by(userId=id).first()
-    if user is None:
-        return jsonify({f"message": "No user data in Database(userId:{id})"}), 404
-    user.loginAt = datetime.now()
-    rds_db.session.commit()
-    user_info = to_dict(user)
-    user_info["type"] = UserType.query.filter_by(id=user_info["type"]).first().name
-
-    return jsonify({"message": "Logged in successfully", "user": user_info}), 200
-
-
 @myApp.app.route("/user/duplicate_check", methods=["GET"])
 def login():
     id = request.args.get("id")
