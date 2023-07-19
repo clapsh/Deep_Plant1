@@ -197,7 +197,7 @@ class MyFlaskApp:
                 abort(404, description=e)
             finally:
                 rds_db.session.close()
-            return jsonify(id)
+            return jsonify(id), 200
 
     def _add_specific_sensory_data(self):
         # 1. Data Valid Check
@@ -320,6 +320,8 @@ class MyFlaskApp:
             new_meat.imagePath = self.s3_conn.get_image_url(
                 self.s3_conn.bucket, f"{folder}/{id}"
             )
+            rds_db.session.merge(new_meat)
+            rds_db.session.commit()
         except Exception as e:
             rds_db.session.rollback()
             abort(404, description=e)
@@ -350,6 +352,7 @@ login_manager.init_app(myApp.app)
 def load_user(user_id):
     return User.query.get(user_id)
 
+
 @myApp.app.route("/user", methods=["GET"])
 def get_users_by_type():
     # UserType 별로 분류될 유저 정보를 담을 딕셔너리
@@ -366,10 +369,10 @@ def get_users_by_type():
         # user_dict에 해당 UserType key가 없다면, 새로운 리스트 생성
         if user_type not in user_dict:
             user_dict[user_type] = []
-        
+
         # UserType에 해당하는 key의 value 리스트에 유저 id 추가
         user_dict[user_type].append(user.userId)
-        
+
     return jsonify(user_dict)
 
 
