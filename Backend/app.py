@@ -392,7 +392,7 @@ def register():
     except Exception as e:
         return jsonify({"message": f"Error Occur {e}"})
     rds_db.session.commit()
-    return jsonify({"message": "Registered successfully"}), 201
+    return jsonify({"message": "Registered successfully"}), 200
 
 
 @myApp.app.route("/user/update", methods=["POST"])
@@ -401,16 +401,17 @@ def update():
     user = create_user(rds_db, data, "old")
     # 3. Session end
     if user is None:
-        return jsonify({"message": "User Update Failed"}), 401
+        return jsonify({"message": "User Update Failed"}), 404
     rds_db.session.commit()
-    return jsonify({"message": "User Update successfully"}), 201
+    return jsonify({"message": "User Update successfully"}), 200
 
 
 @myApp.app.route("/user/duplicate_check", methods=["GET"])
 def duplicate_check():
     id = request.args.get("id")
     user = User.query.filter_by(userId=id).first()
-    if user is not None:
+    print(user)
+    if user is None:
         return jsonify({f"message": f"No duplicated Item (userId:{id})"}), 200
     else:
         return jsonify({"message": f"Duplicated Item (userId:{id}"}), 404
