@@ -514,7 +514,10 @@ def create_user(db, user_data: dict, type):
                     item_encoder(user_data, field, 3)
             else:
                 item_encoder(user_data, field)
-        new_user = User(**user_data)
+        try:
+            new_user = User(**user_data)
+        except Exception as e:
+            raise Exception("Wrong User DB field items" + str(e))
         return new_user
     else:  # 기존 유저 정보 수정
         history = User.query.filter_by(
