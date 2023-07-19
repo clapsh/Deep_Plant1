@@ -412,9 +412,9 @@ def duplicate_check():
     user = User.query.filter_by(userId=id).first()
     print(user)
     if user is None:
-        return jsonify({f"message": f"No duplicated Item (userId:{id})"}), 200
+        return 200
     else:
-        return jsonify({"message": f"Duplicated Item (userId:{id}"}), 404
+        return 404
 
 
 @myApp.app.route("/user/login", methods=["GET"])
@@ -428,13 +428,13 @@ def login():
     user_info = to_dict(user)
     user_info["type"] = UserType.query.filter_by(id=user_info["type"]).first().name
 
-    return jsonify({"message": "Logged in successfully", "user": user_info}), 200
+    return jsonify(user_info), 200
 
 
 @myApp.app.route("/user/logout", methods=["GET"])
 def logout():
     id = request.args.get("id")
-    return jsonify({"message": "Logged out successfully"}), 200
+    return 200
 
 
 def scheduler_function():  # 일정 주기마다 실행하는 함수
