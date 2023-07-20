@@ -53,12 +53,14 @@ class SexType(rds_db.Model):
     id = rds_db.Column(rds_db.Integer, primary_key=True)
     value = rds_db.Column(rds_db.String(255))
 
+
 class StatusType(rds_db.Model):
     """
     0: 대기중
     1: 반려
     2: 승인
     """
+
     __tablename__ = "statusType"
     id = rds_db.Column(rds_db.Integer, primary_key=True)
     value = rds_db.Column(rds_db.String(255))
@@ -203,6 +205,7 @@ class UserType(rds_db.Model):
     (id, name)
     = (0,"Normal"),(1,"Researcher"),(2,"Manager"),(3,None)
     """
+
     __tablename__ = "userType"
     id = rds_db.Column(rds_db.Integer, primary_key=True)
     name = rds_db.Column(rds_db.String(255))
@@ -306,7 +309,7 @@ def find_id(specie_value, primal_value, secondary_value, db):
 
     # If the specie is not found, return an appropriate message
     if not specie:
-        return None
+        raise Exception("Invalid specie data")
 
     # Find category using the provided primal_value, secondary_value, and the specie id
     category = (
@@ -321,7 +324,7 @@ def find_id(specie_value, primal_value, secondary_value, db):
 
     # If the category is not found, return an appropriate message
     if not category:
-        return None
+        raise Exception("Invalid primal or secondary value")
 
     # If everything is fine, return the id of the found category
     return category.id
@@ -372,9 +375,15 @@ def create_meat(
     # 4, meat_data에 있는 필드 수정
     for field in list(meat_data.keys()):
         if field == "sexType":
-            item_encoder(meat_data, field, sex_type.id)
+            try:
+                item_encoder(meat_data, field, sex_type.id)
+            except Exception as e:
+                raise Exception("Invalid sex_type id")
         elif field == "gradeNum":
-            item_encoder(meat_data, field, grade_num.id)
+            try:
+                item_encoder(meat_data, field, grade_num.id)
+            except Exception as e:
+                raise Exception("Invalid grade_num id")
         elif (
             field == "specieValue"
             or field == "primalValue"
@@ -561,7 +570,7 @@ def create_user(db, user_data: dict, type):
 
 def get_meat(db, id):
     meat = db.session.query(Meat).filter(Meat.id == id).first()
-    
+
     if meat is None:
         return None
     result = to_dict(meat)

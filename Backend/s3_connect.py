@@ -40,7 +40,6 @@ class S3Bucket:
             os.remove(local_filepath)
             return True
         else:
-            
             print(f"No such file in Flask Server: {type}/{item_id}.png")
             return False
 
