@@ -1,4 +1,5 @@
 from datetime import datetime
+
 """
 DATA SETTING CONFIG
 """
@@ -110,10 +111,12 @@ pigSmall = {
     ],
 }
 usrType = {0: "Normal", 1: "Researcher", 2: "Manager", 3: None}
-sexType = {0: "Male", 1: "Female", 2: None}
+sexType = {0: "수", 1: "암", 2: "거세", 3: None}
 gradeNum = {0: "1++", 1: "1+", 2: "1", 3: "2", 4: "3", 5: None}
 CATTLE = 0
 PIG = 1
+
+
 def safe_float(val):
     """
     Safe Float 변환
@@ -153,6 +156,7 @@ def safe_bool(val):
     except (ValueError, TypeError):
         return None
 
+
 def convert2datetime(date_string, format):
     """
     String -> Datetime
@@ -168,7 +172,8 @@ def convert2datetime(date_string, format):
         return datetime.strptime(date_string, "%Y%m%d")
     else:
         return date_string
-    
+
+
 def convert2string(date_object, format):
     """
     Datetime -> String
@@ -185,9 +190,10 @@ def convert2string(date_object, format):
     else:
         return str(date_object)
 
-def item_encoder(data_dict, item, input_data = None):
+
+def item_encoder(data_dict, item, input_data=None):
     datetime1_cvr = ["createdAt", "loginAt", "updatedAt"]
-    datetime2_cvr = ["butcheryYmd", "birthYmd","date"]
+    datetime2_cvr = ["butcheryYmd", "birthYmd", "date"]
     str_cvr = [
         "id",
         "userId",
@@ -198,9 +204,9 @@ def item_encoder(data_dict, item, input_data = None):
         "company",
         "jobTitle",
         "homeAddr",
-        "imagePath"
+        "imagePath",
     ]
-    int_cvr = ["period","minute","seqno"]
+    int_cvr = ["period", "minute", "seqno"]
     float_cvr = [
         "marbling",
         "color",
@@ -243,9 +249,13 @@ def item_encoder(data_dict, item, input_data = None):
     else:
         data_dict[item] = input_data
 
+
 def to_dict(model_instance, query_instance=None):
-    if hasattr(model_instance, '__table__'):
-        return {c.name: getattr(model_instance, c.name) for c in model_instance.__table__.columns}
+    if hasattr(model_instance, "__table__"):
+        return {
+            c.name: getattr(model_instance, c.name)
+            for c in model_instance.__table__.columns
+        }
     else:
         cols = query_instance.column_descriptions
-        return { cols[i]['name'] : model_instance[i] for i in range(len(cols)) }
+        return {cols[i]["name"]: model_instance[i] for i in range(len(cols))}
