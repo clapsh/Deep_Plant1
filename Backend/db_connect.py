@@ -79,7 +79,7 @@ class Meat(rds_db.Model):
         rds_db.Integer, rds_db.ForeignKey("category.id"), nullable=False
     )
     gradeNum = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("gradeNum.id"))
-    # statusType = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("statusType.id"),default = 0)
+    statusType = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("statusType.id"),default = 0)
 
     # 3. Open API 및 관리번호 생성시간
     createdAt = rds_db.Column(DateTime, nullable=False)
@@ -233,6 +233,7 @@ def load_initial_data(db):
     초기 데이터 셋업 function
     Params
     1. db: 초기 데이터 셋업 db
+    # 이거 나중에는 merge로 바꾸자.....!! add -> merge TEST!!!!
     """
 
     # 1. Specie
@@ -288,6 +289,13 @@ def load_initial_data(db):
     for id, Type in sexType.items():
         if not SexType.query.get(id):
             temp = SexType(id=id, value=Type)
+            db.session.add(temp)
+    db.session.commit()
+
+    # 7. StatusType
+    for id, Type in statusType.items():
+        if not StatusType.query.get(id):
+            temp = StatusType(id=id, value=Type)
             db.session.add(temp)
     db.session.commit()
 
@@ -578,6 +586,7 @@ def get_meat(db, id):
     gradeNum = (
         db.session.query(GradeNum).filter(GradeNum.id == result["gradeNum"]).first()
     )
+    statusType = db.session.query(StatusType).filter(StatusType.id == result["statusType"]).first()
     # 이미 있는거 변환
     result["sexType"] = sexType.value
     (
@@ -586,6 +595,7 @@ def get_meat(db, id):
         result["secondaryValue"],
     ) = decode_id(result["categoryId"], db)
     result["gradeNum"] = gradeNum.value
+    result["statusType"] = statusType.value
     result["createdAt"] = convert2string(result["createdAt"], 1)
     result["butcheryYmd"] = convert2string(result["butcheryYmd"], 2)
     result["birthYmd"] = convert2string(result["birthYmd"], 2)

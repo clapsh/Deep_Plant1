@@ -80,6 +80,20 @@ class MyFlaskApp:
                 self._add_specific_meat_data(), "http://localhost:3000"
             )
 
+        @self.app.route("/meat/confirm", methods=["GET"])
+        def confirm_specific_meat_data():
+            id = request.args.get("id")
+            return _make_response(
+                self._confirm_specific_meat_data(id), "http://localhost:3000"
+            )
+        
+        @self.app.route("/meat/reject", methods=["GET"])
+        def reject_specific_meat_data():
+            id = request.args.get("id")
+            return _make_response(
+                self._reject_specific_meat_data(id), "http://localhost:3000"
+            )
+
         @self.app.route(
             "/meat/add/sensory_eval", methods=["POST"]
         )  # 3. meat db 추가(OpenAPI 정보)
@@ -141,15 +155,13 @@ class MyFlaskApp:
             return abort(404, description=f"No Meat data found for {id}")
 
     def _get_specific_meat_data_part(self, part_id):  # part_id가 id에 해당하는 육류 id 목록 반환
-        len = Meat.query.count()
-        meat_list = self._get_range_meat_data(0, len)["meat_list"]
+        response = self._get_range_meat_data(0, Meat.query.count())
+        data = response.get_json()
+        meat_list = data.get("meat_list")
 
         # Using list comprehension to filter meat_list
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
-        result = []
-        for i in part_id_meat_list:
-            result.append(self._get_specific_meat_data(i).get_json())
-        return jsonify({part_id: result})
+        return jsonify({part_id : part_id_meat_list})
 
     def _get_range_meat_data(self, offset, count):  #
         offset = int(offset)
@@ -182,12 +194,15 @@ class MyFlaskApp:
             meat = Meat.query.get(id)  # DB에 있는 육류 정보
             if id == None:  # 1. 애초에 id가 없는 request
                 abort(404, description="No ID data sent for update")
+            if meat:
+                if meat.statusType == 2:
+                    abort(404, description="Already confirmed meat data")
             # 1. 신규 육류 데이터 생성
             try:
                 # 1. 육류 데이터 추가
                 new_meat = create_meat(rds_db, data)
+                new_meat.statusType = 0
                 rds_db.session.merge(new_meat)
-
                 # 2. Firestore -> S3
                 self.transfer_folder_image(id, new_meat, "qr_codes")
                 rds_db.session.commit()
@@ -210,13 +225,18 @@ class MyFlaskApp:
         deepAging_data = data.get("deepAging")
         data.pop("deepAging", None)
         with self.app.app_context():
+            meat = Meat.query.get(id)  # DB에 있는 육류 정보
             if id == None:  # 1. 애초에 id가 없는 request
                 abort(404, description="No ID data sent for update")
+
             sensory_eval = SensoryEval.query.filter_by(
                 id=id, seqno=seqno
             ).first()  # DB에 있는 육류 정보
             try:
                 if deepAging_data is not None:  # 가공육 관능검사
+                    if meat:  # 승인 정보 확인
+                        if meat.statusType != 2:
+                            abort(404, description="Not confirmed meat data")
                     if sensory_eval:  # 기존 Deep Aging을 수정하는 경우
                         deepAgingId = sensory_eval.deepAgingId
                     else:  # 새로운 Deep aging을 추가하는 경우
@@ -229,11 +249,16 @@ class MyFlaskApp:
                     )
                     rds_db.session.merge(new_SensoryEval)
                 else:  # 신선육 관능검사
+                    if meat:  # 수정하는 경우
+                        if meat.statusType == 2:
+                            abort(404, description="Already confirmed meat data")
                     deepAgingId = None
                     new_SensoryEval = create_SensoryEval(
                         rds_db, data, seqno, id, deepAgingId
                     )
                     rds_db.session.merge(new_SensoryEval)
+                    meat.statusType = 0
+                    rds_db.session.merge(meat)
 
                 self.transfer_folder_image(
                     f"{id}-{seqno}", new_SensoryEval, "sensory_evals"
@@ -255,6 +280,10 @@ class MyFlaskApp:
         id = data.get("id")
         seqno = data.get("seqno")
         with self.app.app_context():
+            meat = Meat.query.get(id)  # DB에 있는 육류 정보
+            if meat:  # 승인 정보 확인
+                if meat.statusType != 2:
+                    abort(404, description="Not confirmed meat data")
             if id == None:  # 1. 애초에 id가 없는 request
                 abort(404, description="No ID data sent for update")
             try:
@@ -285,6 +314,10 @@ class MyFlaskApp:
         id = data.get("id")
         seqno = data.get("seqno")
         with self.app.app_context():
+            meat = Meat.query.get(id)  # DB에 있는 육류 정보
+            if meat:  # 승인 정보 확인
+                if meat.statusType != 2:
+                    abort(404, description="Not confirmed meat data")
             if id == None:  # 1. 애초에 id가 없는 request
                 abort(404, description="No ID data sent for update")
             try:
@@ -297,6 +330,26 @@ class MyFlaskApp:
             finally:
                 rds_db.session.close()
             return jsonify(id)
+
+    def _confirm_specific_meat_data(self, id):
+        meat = Meat.query.get(id)  # DB에 있는 육류 정보
+        if meat:
+            meat.statusType = 2
+            rds_db.session.merge(meat)
+            rds_db.session.commit()
+            return jsonify(id),200
+        else:
+            abort(404, description="No data in Meat DB")
+
+    def _reject_specific_meat_data(self, id):
+        meat = Meat.query.get(id)  # DB에 있는 육류 정보
+        if meat:
+            meat.statusType = 1
+            rds_db.session.merge(meat)
+            rds_db.session.commit()
+            return jsonify(id),200
+        else:
+            abort(404, description="No data in Meat DB")
 
     # 2. User DB API
     # 3. Utils
