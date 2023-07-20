@@ -449,6 +449,7 @@ def create_SensoryEval(db, meat_data: dict, seqno: int, id: str, deepAgingId: in
     # Create a new Meat object
     try:
         new_SensoryEval = SensoryEval(**meat_data)
+        print(to_dict(new_SensoryEval))
     except Exception as e:
         raise Exception("Wrong sensory eval DB field items" + str(e))
     return new_SensoryEval
@@ -462,6 +463,7 @@ def create_DeepAging(db, data: dict):
     data["deepAgingId"] = str(uuid.uuid4())
     try:
         new_deepAging = DeepAging(**data)
+        print(to_dict(new_deepAging))
     except Exception as e:
         raise Exception("Wrong DeepAging DB field items: " + str(e))
     return new_deepAging

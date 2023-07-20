@@ -74,7 +74,7 @@ class MyFlaskApp:
             else:
                 return _make_response(self._get_meat_data(), "http://localhost:3000")
 
-        @self.app.route("/meat/user",methods=["GET"])
+        @self.app.route("/meat/user", methods=["GET"])
         def get_user_meat_data():
             userId = request.args.get("userId")
             userType = request.args.get("userType")
@@ -187,13 +187,15 @@ class MyFlaskApp:
         data = response.get_json()
         return jsonify(data["meat_list"])
 
-    def _get_userId_meat_data(self,userId):
+    def _get_userId_meat_data(self, userId):
         pass
-    def _get_userType_meat_data(self,userType):
+
+    def _get_userType_meat_data(self, userType):
         pass
+
     def _get_user_meat_data(self):
         pass
-    
+
     def _add_specific_meat_data(self):  # 육류 데이터 추가
         # 1. Data Valid Check
         if not request.json:
@@ -251,15 +253,19 @@ class MyFlaskApp:
                             abort(404, description="Not confirmed meat data")
                     if sensory_eval:  # 기존 Deep Aging을 수정하는 경우
                         deepAgingId = sensory_eval.deepAgingId
+                        new_SensoryEval = create_SensoryEval(
+                            rds_db, data, seqno, id, deepAgingId
+                        )
+                        rds_db.session.merge(new_SensoryEval)
                     else:  # 새로운 Deep aging을 추가하는 경우
                         new_DeepAging = create_DeepAging(rds_db, deepAging_data)
                         deepAgingId = new_DeepAging.deepAgingId
-                        rds_db.session.flush(new_DeepAging)
-
-                    new_SensoryEval = create_SensoryEval(
-                        rds_db, data, seqno, id, new_DeepAging.deepAgingId
-                    )
-                    rds_db.session.merge(new_SensoryEval)
+                        rds_db.session.add(new_DeepAging)
+                        rds_db.session.commit()
+                        new_SensoryEval = create_SensoryEval(
+                            rds_db, data, seqno, id, deepAgingId
+                        )
+                        rds_db.session.flush(new_SensoryEval)
                 else:  # 신선육 관능검사
                     if meat:  # 수정하는 경우
                         if meat.statusType == 2:
