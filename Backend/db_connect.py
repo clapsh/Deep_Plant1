@@ -11,19 +11,19 @@ rds_db = SQLAlchemy()
 
 class Species(rds_db.Model):
     __tablename__ = "species"
-    id = rds_db.Column(rds_db.Integer, primary_key=True)
-    value = rds_db.Column(rds_db.String(255))
-    categories = rds_db.relationship("Category", backref="species")
+    id = rds_db.Column(rds_db.Integer, primary_key=True) # 종 ID
+    value = rds_db.Column(rds_db.String(255)) # 종 값(cattle, pig)
+    categories = rds_db.relationship("Category", backref="species") 
 
 
 class Category(rds_db.Model):
     __tablename__ = "category"
-    id = rds_db.Column(rds_db.Integer, primary_key=True)
+    id = rds_db.Column(rds_db.Integer, primary_key=True) # 카테고리 ID
     speciesId = rds_db.Column(
         rds_db.Integer, rds_db.ForeignKey("species.id")
-    )  # 0: Cattle, 1: Pig
-    primalValue = rds_db.Column(rds_db.String(255), nullable=False)
-    secondaryValue = rds_db.Column(rds_db.String(255), nullable=False)
+    )  # 종 ID
+    primalValue = rds_db.Column(rds_db.String(255), nullable=False) # 부위 대분활 값
+    secondaryValue = rds_db.Column(rds_db.String(255), nullable=False) # 부위 소분할 값
     meats = rds_db.relationship("Meat", backref="category")
 
 
@@ -38,8 +38,8 @@ class GradeNum(rds_db.Model):
     """
 
     __tablename__ = "gradeNum"
-    id = rds_db.Column(rds_db.Integer, primary_key=True)
-    value = rds_db.Column(rds_db.String(255))
+    id = rds_db.Column(rds_db.Integer, primary_key=True) # 등급 ID
+    value = rds_db.Column(rds_db.String(255)) # 등급 값 (1++,1+,1,2,3,null)
 
 
 class SexType(rds_db.Model):
@@ -50,8 +50,8 @@ class SexType(rds_db.Model):
     """
 
     __tablename__ = "sexType"
-    id = rds_db.Column(rds_db.Integer, primary_key=True)
-    value = rds_db.Column(rds_db.String(255))
+    id = rds_db.Column(rds_db.Integer, primary_key=True) # 성별 ID
+    value = rds_db.Column(rds_db.String(255)) # 성별 값 (수, 암, 거세, null)
 
 
 class StatusType(rds_db.Model):
@@ -62,35 +62,35 @@ class StatusType(rds_db.Model):
     """
 
     __tablename__ = "statusType"
-    id = rds_db.Column(rds_db.Integer, primary_key=True)
-    value = rds_db.Column(rds_db.String(255))
+    id = rds_db.Column(rds_db.Integer, primary_key=True) # 승인 여부 ID
+    value = rds_db.Column(rds_db.String(255)) # 승인 값 (대기중, 반려, 승인)
 
 
 class Meat(rds_db.Model):
     __tablename__ = "meat"
     # 1. 육류 관리번호
-    id = rds_db.Column(rds_db.String(255), primary_key=True)
+    id = rds_db.Column(rds_db.String(255), primary_key=True) # 육류 관리번호
     # 2. 외래키 관리
     userId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("users.userId"), nullable=False
-    )
-    sexType = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("sexType.id"))
+    ) # 생성한 유저 ID
+    sexType = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("sexType.id")) # 성별 ID
     categoryId = rds_db.Column(
         rds_db.Integer, rds_db.ForeignKey("category.id"), nullable=False
-    )
-    gradeNum = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("gradeNum.id"))
-    statusType = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("statusType.id"),default = 0)
+    ) # Category ID
+    gradeNum = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("gradeNum.id")) # 등급 ID                
+    statusType = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("statusType.id"),default = 0) # 승인 여부 ID
 
     # 3. Open API 및 관리번호 생성시간
-    createdAt = rds_db.Column(DateTime, nullable=False)
+    createdAt = rds_db.Column(DateTime, nullable=False) # 관리번호 생성 시간
     traceNum = rds_db.Column(rds_db.String(255), nullable=False)  # 이력번호(묶음번호)
-    farmAddr = rds_db.Column(rds_db.String(255))
-    farmerNm = rds_db.Column(rds_db.String(255))
+    farmAddr = rds_db.Column(rds_db.String(255)) # 농장 주소
+    farmerNm = rds_db.Column(rds_db.String(255)) # 농장주 명
     butcheryYmd = rds_db.Column(DateTime, nullable=False)  # 도축일자
-    birthYmd = rds_db.Column(DateTime)
+    birthYmd = rds_db.Column(DateTime) # 출생일자
 
     # 4. QR code image
-    imagePath = rds_db.Column(rds_db.String(255))
+    imagePath = rds_db.Column(rds_db.String(255)) # QR image path
 
 
 class SensoryEval(rds_db.Model):
@@ -100,20 +100,20 @@ class SensoryEval(rds_db.Model):
         rds_db.String(255),
         rds_db.ForeignKey("meat.id"),
         primary_key=True,
-    )
-    seqno = rds_db.Column(rds_db.Integer, primary_key=True)  # 0이면 원육, 1이상이면 가공육
+    ) # 육류 관리번호
+    seqno = rds_db.Column(rds_db.Integer, primary_key=True)  # 가공 횟수(seqno가 0이면 원육, 1이상인 N일때 N회차 가공육)
     __table_args__ = (rds_db.PrimaryKeyConstraint("id", "seqno"),)
 
     # 2. 관능검사 메타 데이터
-    createdAt = rds_db.Column(DateTime, nullable=False)
+    createdAt = rds_db.Column(DateTime, nullable=False) # 관능검사 생성 시간
     userId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("users.userId"), nullable=False
-    )
-    period = rds_db.Column(rds_db.Integer, nullable=False)
-    imagePath = rds_db.Column(rds_db.String(255))
+    ) # 관능검사 생성한 유저 ID
+    period = rds_db.Column(rds_db.Integer, nullable=False) # 도축일로부터 경과된 시간
+    imagePath = rds_db.Column(rds_db.String(255)) # 관능검사 이미지 경로
     deepAgingId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("deep_aging.deepAgingId")
-    )  # 원육이면 null, 가공육이면 해당 deepAgingId
+    )  # 원육이면 null, 가공육이면 해당 딥에이징 정보 ID
 
     # 3. 관능검사 데이터
     marbling = rds_db.Column(rds_db.Float)
@@ -126,8 +126,8 @@ class SensoryEval(rds_db.Model):
 class HeatedmeatSensoryEval(rds_db.Model):
     __tablename__ = "heatedmeat_sensory_eval"
     # 1. 복합키 설정
-    id = rds_db.Column(rds_db.String(255), primary_key=True)
-    seqno = rds_db.Column(rds_db.Integer, primary_key=True)
+    id = rds_db.Column(rds_db.String(255), primary_key=True) # 육류 관리번호
+    seqno = rds_db.Column(rds_db.Integer, primary_key=True) # 가공 횟수(seqno가 0이면 원육, 1이상인 N일때 N회차 가공육)
     __table_args__ = (
         rds_db.PrimaryKeyConstraint("id", "seqno"),
         rds_db.ForeignKeyConstraint(
@@ -136,12 +136,12 @@ class HeatedmeatSensoryEval(rds_db.Model):
     )
 
     # 2. 관능검사 메타 데이터
-    createdAt = rds_db.Column(DateTime, nullable=False)
+    createdAt = rds_db.Column(DateTime, nullable=False) # 가열육 관능검사 데이터 생성 시간
     userId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("users.userId"), nullable=False
-    )
-    period = rds_db.Column(rds_db.Integer, nullable=False)
-    imagePath = rds_db.Column(rds_db.String(255))
+    ) # 가열육 관능검사 데이터 생성 유저 ID
+    period = rds_db.Column(rds_db.Integer, nullable=False) # 도축일로부터 경과된 시간
+    imagePath = rds_db.Column(rds_db.String(255)) # 가열육 관능검사 이미지 경로
 
     # 3. 관능검사 데이터
     flavor = rds_db.Column(rds_db.Float)
@@ -154,8 +154,8 @@ class HeatedmeatSensoryEval(rds_db.Model):
 class ProbexptData(rds_db.Model):
     __tablename__ = "probexpt_data"
     # 1. 복합키 설정
-    id = rds_db.Column(rds_db.String(255), primary_key=True)
-    seqno = rds_db.Column(rds_db.Integer, primary_key=True)
+    id = rds_db.Column(rds_db.String(255), primary_key=True) # 육류 관리번호
+    seqno = rds_db.Column(rds_db.Integer, primary_key=True) # 가공 횟수(seqno가 0이면 원육, 1이상인 N일때 N회차 가공육)
     __table_args__ = (
         rds_db.PrimaryKeyConstraint("id", "seqno"),
         rds_db.ForeignKeyConstraint(
@@ -164,11 +164,11 @@ class ProbexptData(rds_db.Model):
     )
 
     # 2. 연구실 메타 데이터
-    updatedAt = rds_db.Column(DateTime, nullable=False)
+    updatedAt = rds_db.Column(DateTime, nullable=False) # 실험실 데이터 업데이트(수정 혹은 생성) 시간
     userId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("users.userId"), nullable=False
-    )
-    period = rds_db.Column(rds_db.Integer, nullable=False)
+    ) # 실험실 데이터 업데이트(수정 혹은 생성)한 유저 ID
+    period = rds_db.Column(rds_db.Integer, nullable=False) # 도축일로부터 경과된 시간
 
     # 3. 실험 데이터
     L = rds_db.Column(rds_db.Float)
@@ -193,11 +193,11 @@ class ProbexptData(rds_db.Model):
 class DeepAging(rds_db.Model):
     __tablename__ = "deep_aging"
     # 1. 기본키
-    deepAgingId = rds_db.Column(rds_db.String(255), primary_key=True)
+    deepAgingId = rds_db.Column(rds_db.String(255), primary_key=True) # 딥에이징 이력 ID
 
     # 2. 딥에이징 데이터
-    date = rds_db.Column(DateTime, nullable=False)
-    minute = rds_db.Column(rds_db.Integer, nullable=False)
+    date = rds_db.Column(DateTime, nullable=False) # 딥에이징 실시 일자
+    minute = rds_db.Column(rds_db.Integer, nullable=False) # 딥에이징 진행 시간(분)
 
 
 class UserType(rds_db.Model):
@@ -207,25 +207,25 @@ class UserType(rds_db.Model):
     """
 
     __tablename__ = "userType"
-    id = rds_db.Column(rds_db.Integer, primary_key=True)
-    name = rds_db.Column(rds_db.String(255))
+    id = rds_db.Column(rds_db.Integer, primary_key=True) # 유저 Type ID
+    name = rds_db.Column(rds_db.String(255)) # 유저 종류 이름 (Normal, Researcher, Manager, None)
 
 
 class User(rds_db.Model):
     __tablename__ = "users"
-    userId = rds_db.Column(rds_db.String(255), primary_key=True)
-    createdAt = rds_db.Column(DateTime, nullable=False)
-    updatedAt = rds_db.Column(DateTime)
-    loginAt = rds_db.Column(DateTime)
-    password = rds_db.Column(rds_db.String(255), nullable=False)
-    name = rds_db.Column(rds_db.String(255))
-    company = rds_db.Column(rds_db.String(255))
-    jobTitle = rds_db.Column(rds_db.String(255))
-    homeAddr = rds_db.Column(rds_db.String(255))
-    alarm = rds_db.Column(rds_db.Boolean, default=False)
+    userId = rds_db.Column(rds_db.String(255), primary_key=True) # 유저 ID -> 이메일
+    createdAt = rds_db.Column(DateTime, nullable=False) # 유저 ID 생성 시간
+    updatedAt = rds_db.Column(DateTime) # 유저 정보 수정 시간
+    loginAt = rds_db.Column(DateTime) # 유저 로그인 시간
+    password = rds_db.Column(rds_db.String(255), nullable=False) # 유저 비밀번호 (암호화)
+    name = rds_db.Column(rds_db.String(255)) # 유저명
+    company = rds_db.Column(rds_db.String(255)) # 직장명
+    jobTitle = rds_db.Column(rds_db.String(255)) # 직위명
+    homeAddr = rds_db.Column(rds_db.String(255)) # 유저 주소
+    alarm = rds_db.Column(rds_db.Boolean, default=False) # 유저 알람 허용 여부
     type = rds_db.Column(
         rds_db.Integer, rds_db.ForeignKey("userType.id"), nullable=False
-    )
+    ) # 유저 Type ID
 
 
 def load_initial_data(db):
@@ -705,7 +705,7 @@ def get_ProbexptData(db, id, seqno):
     )
     if probexpt:
         probexpt_history = to_dict(probexpt)
-        probexpt_history["createdAt"] = convert2string(probexpt_history["createdAt"], 1)
+        probexpt_history["updatedAt"] = convert2string(probexpt_history["updatedAt"], 1)
         return probexpt_history
     else:
         return None

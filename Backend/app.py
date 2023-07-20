@@ -74,6 +74,23 @@ class MyFlaskApp:
             else:
                 return _make_response(self._get_meat_data(), "http://localhost:3000")
 
+        @self.app.route("/meat/user",methods=["GET"])
+        def get_user_meat_data():
+            userId = request.args.get("userId")
+            userType = request.args.get("userType")
+            if userId:
+                return _make_response(
+                    self._get_userId_meat_data(userId), "http://localhost:3000"
+                )
+            elif userType:
+                return _make_response(
+                    self._get_userType_meat_data(userType), "http://localhost:3000"
+                )
+            else:
+                return _make_response(
+                    self._get_user_meat_data(), "http://localhost:3000"
+                )
+
         @self.app.route("/meat/add", methods=["POST"])  # 3. meat db 추가(OpenAPI 정보)
         def add_specific_meat_data():
             return _make_response(
@@ -86,7 +103,7 @@ class MyFlaskApp:
             return _make_response(
                 self._confirm_specific_meat_data(id), "http://localhost:3000"
             )
-        
+
         @self.app.route("/meat/reject", methods=["GET"])
         def reject_specific_meat_data():
             id = request.args.get("id")
@@ -118,19 +135,7 @@ class MyFlaskApp:
                 self._add_specific_probexpt_data(), "http://localhost:3000"
             )
 
-        @self.app.route("/meat/upload_image", methods=["POST"])  # 4. 특정 육류 이미지 데이터 수정
-        def update_specific_meat_image():
-            id = request.args.get("id")
-            folder = request.args.get("folder")  # meats 이거나 qr_codes
-            if id:
-                return _make_response(
-                    self._update_specific_meat_image(id, folder),
-                    "http://localhost:3000",
-                )
-            else:
-                abort(400, description="No id Provided for upload image")
-
-        @self.app.route("/meat/delete", methods=["POST"])  # 5. meat data 삭제
+        @self.app.route("/meat/delete", methods=["GET"])  # 5. meat data 삭제
         def delete_meat_data():
             id = request.args.get("id")
             offset = request.args.get("offset")
@@ -161,7 +166,7 @@ class MyFlaskApp:
 
         # Using list comprehension to filter meat_list
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
-        return jsonify({part_id : part_id_meat_list})
+        return jsonify({part_id: part_id_meat_list})
 
     def _get_range_meat_data(self, offset, count):  #
         offset = int(offset)
@@ -182,6 +187,13 @@ class MyFlaskApp:
         data = response.get_json()
         return jsonify(data["meat_list"])
 
+    def _get_userId_meat_data(self,userId):
+        pass
+    def _get_userType_meat_data(self,userType):
+        pass
+    def _get_user_meat_data(self):
+        pass
+    
     def _add_specific_meat_data(self):  # 육류 데이터 추가
         # 1. Data Valid Check
         if not request.json:
@@ -337,7 +349,7 @@ class MyFlaskApp:
             meat.statusType = 2
             rds_db.session.merge(meat)
             rds_db.session.commit()
-            return jsonify(id),200
+            return jsonify(id), 200
         else:
             abort(404, description="No data in Meat DB")
 
@@ -347,9 +359,46 @@ class MyFlaskApp:
             meat.statusType = 1
             rds_db.session.merge(meat)
             rds_db.session.commit()
-            return jsonify(id),200
+            return jsonify(id), 200
         else:
             abort(404, description="No data in Meat DB")
+
+    def _delete_specific_meat_data(self, id):
+        with self.app.app_context():
+            # 1. 육류 DB 체크
+            meat = Meat.query.get(id)
+
+            if meat is None:
+                abort(404, description="No meat data found with the given ID")
+            try:
+                sensory_evals = SensoryEval.query.filter_by(id=id).all()
+                heatedmeat_evals = HeatedmeatSensoryEval.query.filter_by(id=id).all()
+                probexpt_datas = ProbexptData.query.filter_by(id=id).all()
+                for heatedmeat_eval in heatedmeat_evals:
+                    seqno = heatedmeat_eval.seqno
+                    rds_db.session.delete(heatedmeat_eval)
+                    self.s3_conn.delete_image(
+                        "heatedmeat_sensory_evals", f"{id}-{seqno}"
+                    )
+                    rds_db.session.commit()
+
+                for probexpt_data in probexpt_datas:
+                    rds_db.session.delete(probexpt_data)
+                rds_db.session.commit()
+
+                for sensory_eval in sensory_evals:
+                    seqno = sensory_eval.seqno
+                    rds_db.session.delete(sensory_eval)
+                    self.s3_conn.delete_image("sensory_evals", f"{id}-{seqno}")
+                    rds_db.session.commit()
+
+                rds_db.session.delete(meat)
+                self.s3_conn.delete_image("qr_codes", f"{id}")
+                rds_db.session.commit()
+            except Exception as e:
+                rds_db.session.rollback()
+                abort(404, description=e)
+            return jsonify(id), 200
 
     # 2. User DB API
     # 3. Utils
