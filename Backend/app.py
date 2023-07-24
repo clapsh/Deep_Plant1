@@ -91,6 +91,20 @@ class MyFlaskApp:
                     self._get_user_meat_data(), "http://localhost:3000"
                 )
 
+        @self.app.route("/meat/status", methods=["GET"])
+        def get_status_meat_data():
+            statusType_value = request.args.get("statusType")
+            type_num = StatusType.query.filter_by(value=statusType_value).first()
+            if type_num:  # 대기중
+                return _make_response(
+                    self._get_status_meat_data(type_num), "http://localhost:3000"
+                )
+            else:
+                return _make_response(
+                    abort(404, description="Wrong Status value ('대기중','반려','승인')"),
+                    "http://localhost:3000",
+                )
+
         @self.app.route("/meat/add", methods=["POST"])  # 3. meat db 추가(OpenAPI 정보)
         def add_specific_meat_data():
             return _make_response(
@@ -160,9 +174,11 @@ class MyFlaskApp:
             return abort(404, description=f"No Meat data found for {id}")
 
     def _get_specific_meat_data_part(self, part_id):  # part_id가 id에 해당하는 육류 id 목록 반환
-        response = self._get_range_meat_data(0, Meat.query.count())
-        data = response.get_json()
-        meat_list = data.get("meat_list")
+        meats_with_statusType_2 = Meat.query.filter_by(statusType=2).all()
+
+        meat_list = []
+        for meat in meats_with_statusType_2:
+            meat_list.append(meat.id)
 
         # Using list comprehension to filter meat_list
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
@@ -188,13 +204,64 @@ class MyFlaskApp:
         return jsonify(data["meat_list"])
 
     def _get_userId_meat_data(self, userId):
-        pass
+        try:
+            meats = Meat.query.filter_by(userId=userId).all()
+            if meats:
+                result = []
+                for meat in meats:
+                    temp = get_meat(rds_db, meat.id)
+                    del temp["processedmeat"]
+                    del temp["rawmeat"]
+                    result.append(temp)
+                return jsonify(result), 200
+            else:
+                return jsonify({"message": "No meats found for the given userId."}), 404
+        except Exception as e:
+            abort(404, description=str(e))
 
     def _get_userType_meat_data(self, userType):
-        pass
+        try:
+            userType_value = UserType.query.filter_by(name=userType).first()
+            if userType_value:
+                userType = userType_value.id
+            else:
+                raise Exception(
+                    "No userType in DB  (Normal, Researcher, Manager, None)"
+                )
+            # First, get all users of the given user type
+            users = User.query.filter_by(type=userType).all()
+            user_ids = [user.userId for user in users]
+
+            # Then, get all meats that were created by the users of the given user type
+            meats = Meat.query.filter(Meat.userId.in_(user_ids)).all()
+
+            if meats:
+                result = []
+                for meat in meats:
+                    temp = get_meat(rds_db, meat.id)
+                    del temp["processedmeat"]
+                    del temp["rawmeat"]
+                    result.append(temp)
+                return jsonify(result), 200
+            else:
+                return (
+                    jsonify({"message": "No meats found for the given userType."}),
+                    404,
+                )
+        except Exception as e:
+            abort(404, description=str(e))
 
     def _get_user_meat_data(self):
-        pass
+        try:
+            users = User.query.all()
+
+            user_meats = {}
+            for user in users:
+                response, _ = self._get_userId_meat_data(user.userId)
+                user_meats[user.userId] = response.get_json()
+            return jsonify(user_meats), 200
+        except Exception as e:
+            abort(404, description=str(e))
 
     def _add_specific_meat_data(self):  # 육류 데이터 추가
         # 1. Data Valid Check
