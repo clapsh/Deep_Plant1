@@ -166,21 +166,15 @@ class MyFlaskApp:
                 self._add_specific_probexpt_data(), "http://localhost:3000"
             )
 
-        @self.app.route("/meat/delete", methods=["GET"])  # 5. meat data 삭제
+        @self.app.route("/meat/delete", methods=["POST","GET"])  # 5. meat data 삭제
         def delete_meat_data():
             id = request.args.get("id")
-            offset = request.args.get("offset")
-            count = request.args.get("count")
             if id:  # 특정 id 삭제
                 return _make_response(
                     self._delete_specific_meat_data(id), "http://localhost:3000"
                 )
-            elif offset and count:  # savetime 기준으로 offset * count 부터 count개 삭제
-                return _make_response(
-                    self._delete_range_meat_data(offset, count), "http://localhost:3000"
-                )
             else:  # 전체 육류 데이터 삭제
-                return _make_response(self._delete_meat_data(), "http://localhost:3000")
+                return _make_response(self._delete_range_meat_data(), "http://localhost:3000")
 
     # 1. Meat DB API
     def _get_specific_meat_data(self, id):
@@ -556,7 +550,7 @@ class MyFlaskApp:
             meat = Meat.query.get(id)
 
             if meat is None:
-                abort(404, description="No meat data found with the given ID")
+                return f"No meat data found with the given ID: {id}"
             try:
                 sensory_evals = SensoryEval.query.filter_by(id=id).all()
                 heatedmeat_evals = HeatedmeatSensoryEval.query.filter_by(id=id).all()
@@ -582,10 +576,31 @@ class MyFlaskApp:
                 rds_db.session.delete(meat)
                 self.s3_conn.delete_image("qr_codes", f"{id}")
                 rds_db.session.commit()
+                return id
             except Exception as e:
                 rds_db.session.rollback()
-                abort(404, description=e)
-            return jsonify(id), 200
+                return str(e)
+            
+
+    def _delete_range_meat_data(self):
+        # 1. Data Valid Check
+        if not request.json:
+            abort(400, description="No data sent for Deletion")
+        # 2. 기본 데이터 받아두기
+        data = request.get_json()
+        delete_list =list( data.get("delete_id"))
+        delete_success = []
+        delete_failed = []  
+        try:
+            for data in delete_list:
+                result = self._delete_specific_meat_data(data)
+                if isinstance(result, int):  # if the deletion was successful, result would be the id
+                    delete_success.append(result)
+                else:  # if the deletion failed, result would be an error message
+                    delete_failed.append({"id": id, "reason": result})
+            return jsonify({"delete_success": delete_list,"delete_failed":delete_failed}), 200
+        except Exception as e:
+            abort(404,description=3)
 
     # 2. User DB API
     # 3. Utils
