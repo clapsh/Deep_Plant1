@@ -161,6 +161,9 @@ class ProbexptData(rds_db.Model):
         rds_db.ForeignKeyConstraint(
             ["id", "seqno"], ["sensory_eval.id", "sensory_eval.seqno"]
         ),
+        rds_db.CheckConstraint('0 <= DL AND DL <= 100', name='check_DL_percentage'),
+        rds_db.CheckConstraint('0 <= CL AND CL <= 100', name='check_CL_percentage'),
+        rds_db.CheckConstraint('0 <= RW AND RW <= 100', name='check_RW_percentage'),
     )
 
     # 2. 연구실 메타 데이터

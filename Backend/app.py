@@ -71,6 +71,7 @@ class MyFlaskApp:
                 return _make_response(
                     self._get_range_meat_data(offset, count), "http://localhost:3000"
                 )
+
             else:
                 return _make_response(self._get_meat_data(), "http://localhost:3000")
 
@@ -94,11 +95,21 @@ class MyFlaskApp:
         @self.app.route("/meat/status", methods=["GET"])
         def get_status_meat_data():
             statusType_value = request.args.get("statusType")
-            type_num = StatusType.query.filter_by(value=statusType_value).first()
-            if type_num:  # 대기중
-                return _make_response(
-                    self._get_status_meat_data(type_num), "http://localhost:3000"
-                )
+            offset = request.args.get("offset")
+            count = request.args.get("count")
+            if statusType_value:
+                if offset and count:
+                    return _make_response(
+                        self._get_range_status_meat_data(
+                            statusType_value, offset, count
+                        ),
+                        "http://localhost:3000",
+                    )
+                else:
+                    return _make_response(
+                        self._get_status_meat_data(statusType_value),
+                        "http://localhost:3000",
+                    )
             else:
                 return _make_response(
                     abort(404, description="Wrong Status value ('대기중','반려','승인')"),
@@ -109,6 +120,12 @@ class MyFlaskApp:
         def add_specific_meat_data():
             return _make_response(
                 self._add_specific_meat_data(), "http://localhost:3000"
+            )
+
+        @self.app.route("/meat/add/deep_aging_data", methods=["POST"])
+        def add_specific_deep_aging_data():
+            return _make_response(
+                self._add_specific_deep_aging_meat_data(), "http://localhost:3000"
             )
 
         @self.app.route("/meat/confirm", methods=["GET"])
@@ -197,6 +214,52 @@ class MyFlaskApp:
         meat_result = [data.id for data in meat_data]
         result = {"len": Meat.query.count(), "meat_list": meat_result}
         return jsonify(result)
+
+    def _get_status_meat_data(self, varified):
+        meats_db = Meat.query.all()
+        meat_list = []
+        if varified == "2":  # 승인
+            varified = "승인"
+        elif varified == "1":  # 반려
+            varified = "반려"
+        elif varified == "0":
+            varified = "대기중"
+        for meat in meats_db:
+            temp = get_meat(rds_db, meat.id)
+            del temp["processedmeat"]
+            del temp["rawmeat"]
+            if temp.get("statusType") == varified:
+                meat_list.append(temp)
+        return jsonify({f"{varified}": meat_list}), 200
+
+    def _get_range_status_meat_data(self, varified, offset, count):
+        offset = int(offset)
+        count = int(count)
+        varified = int(varified)
+        result = []
+        meat_data = (
+            Meat.query.options()
+            .filter_by(statusType=varified)
+            .order_by(Meat.createdAt.desc())
+            .offset(offset * count)
+            .limit(count)
+            .all()
+        )
+        for meat in meat_data:
+            temp = get_meat(rds_db, meat.id)
+            del temp["processedmeat"]
+            del temp["rawmeat"]
+            result.append(temp)
+        if varified == 2:
+            varified = "승인"
+        elif varified == 1:
+            varified = "반려"
+        else:
+            varified = "대기중"
+        return (
+            jsonify({f"{varified}": result}),
+            200,
+        )
 
     def _get_meat_data(self):
         response = self._get_range_meat_data(0, Meat.query.count())
@@ -332,7 +395,7 @@ class MyFlaskApp:
                         new_SensoryEval = create_SensoryEval(
                             rds_db, data, seqno, id, deepAgingId
                         )
-                        rds_db.session.flush(new_SensoryEval)
+                        rds_db.session.merge(new_SensoryEval)
                 else:  # 신선육 관능검사
                     if meat:  # 수정하는 경우
                         if meat.statusType == 2:
@@ -407,8 +470,59 @@ class MyFlaskApp:
                 abort(404, description="No ID data sent for update")
             try:
                 new_ProbexptData = create_ProbexptData(rds_db, data, seqno, id)
-                rds_db.session.add(new_ProbexptData)
+                rds_db.session.merge(new_ProbexptData)
                 rds_db.session.commit()
+            except Exception as e:
+                rds_db.session.rollback()
+                abort(404, description=e)
+            finally:
+                rds_db.session.close()
+            return jsonify(id)
+
+    def _add_specific_deep_aging_meat_data(self):
+        # 1. Data Valid Check
+        if not request.json:
+            abort(400, description="No data sent for update")
+        # 2. 기본 데이터 받아두기
+        data = request.get_json()
+        id = data.get("id")
+        seqno = data.get("seqno")
+        deepAging_data = data.get("deepAging")
+        data.pop("deepAging", None)
+        with self.app.app_context():
+            meat = Meat.query.get(id)  # DB에 있는 육류 정보
+            if id == None:  # 1. 애초에 id가 없는 request
+                abort(404, description="No ID data sent for update")
+            sensory_eval = SensoryEval.query.filter_by(
+                id=id, seqno=seqno
+            ).first()  # DB에 있는 육류 정보
+            try:
+                if deepAging_data is not None:
+                    if meat:  # 승인 정보 확인
+                        if meat.statusType != 2:
+                            abort(404, description="Not confirmed meat data")
+                    if sensory_eval:  # 기존 Deep Aging을 수정하는 경우
+                        deepAgingId = sensory_eval.deepAgingId
+                        existing_DeepAging = DeepAging.query.get(deepAgingId)
+                        if existing_DeepAging:
+                            for key, value in deepAging_data.items():
+                                setattr(existing_DeepAging, key, value)
+                        else:
+                            abort(
+                                404, description="No deep aging data found for update"
+                            )
+                    else:  # 새로운 Deep aging을 추가하는 경우
+                        new_DeepAging = create_DeepAging(rds_db, deepAging_data)
+                        deepAgingId = new_DeepAging.deepAgingId
+                        rds_db.session.add(new_DeepAging)
+                        rds_db.session.commit()
+                        new_SensoryEval = create_SensoryEval(
+                            rds_db, data, seqno, id, deepAgingId
+                        )
+                        rds_db.session.merge(new_SensoryEval)
+                    rds_db.session.commit()
+                else:
+                    abort(404, description="No deepaging data in request")
             except Exception as e:
                 rds_db.session.rollback()
                 abort(404, description=e)
