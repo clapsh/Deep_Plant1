@@ -145,6 +145,7 @@ class AI_SensoryEval(rds_db.Model):
     )  # 관능검사 생성한 유저 ID
     period = rds_db.Column(rds_db.Integer, nullable=False)  # 도축일로부터 경과된 시간
     imagePath = rds_db.Column(rds_db.String(255))  # xai 관능검사 이미지 경로
+    xai_imagePath = rds_db.Column(rds_db.String(255))
     deepAgingId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("deep_aging.deepAgingId")
     )  # 원육이면 null, 가공육이면 해당 딥에이징 정보 ID
@@ -178,6 +179,32 @@ class HeatedmeatSensoryEval(rds_db.Model):
     )  # 가열육 관능검사 데이터 생성 유저 ID
     period = rds_db.Column(rds_db.Integer, nullable=False)  # 도축일로부터 경과된 시간
     imagePath = rds_db.Column(rds_db.String(255))  # 가열육 관능검사 이미지 경로
+
+    # 3. 관능검사 데이터
+    flavor = rds_db.Column(rds_db.Float)
+    juiciness = rds_db.Column(rds_db.Float)
+    tenderness = rds_db.Column(rds_db.Float)
+    umami = rds_db.Column(rds_db.Float)
+    palability = rds_db.Column(rds_db.Float)
+
+
+class AI_HeatedmeatSensoryEval(rds_db.Model):
+    __tablename__ = "ai_heatedmeat_sensory_eval"
+    # 1. 복합키 설정
+    id = rds_db.Column(rds_db.String(255), primary_key=True)  # 육류 관리번호
+    seqno = rds_db.Column(
+        rds_db.Integer, primary_key=True
+    )  # 가공 횟수(seqno가 0이면 원육, 1이상인 N일때 N회차 가공육)
+    __table_args__ = (rds_db.PrimaryKeyConstraint("id", "seqno"),)
+
+    # 2. 관능검사 메타 데이터
+    createdAt = rds_db.Column(DateTime, nullable=False)  # 가열육 관능검사 데이터 생성 시간
+    userId = rds_db.Column(
+        rds_db.String(255), rds_db.ForeignKey("users.userId"), nullable=False
+    )  # 가열육 관능검사 데이터 생성 유저 ID
+    period = rds_db.Column(rds_db.Integer, nullable=False)  # 도축일로부터 경과된 시간
+    imagePath = rds_db.Column(rds_db.String(255))  # 가열육 관능검사 이미지 경로
+    xai_imagePath = rds_db.Column(rds_db.String(255))
 
     # 3. 관능검사 데이터
     flavor = rds_db.Column(rds_db.Float)
@@ -757,5 +784,23 @@ def get_ProbexptData(db, id, seqno):
         probexpt_history = to_dict(probexpt)
         probexpt_history["updatedAt"] = convert2string(probexpt_history["updatedAt"], 1)
         return probexpt_history
+    else:
+        return None
+
+
+def get_User(db, userId):
+    userData = db.session.query(User).filter(User.userId == userId).first()
+    if userData:
+        userData_dict = to_dict(userData)
+        userData_dict["createdAt"] = convert2string(userData_dict.get("createdAt"), 1)
+        userData_dict["updatedAt"] = convert2string(userData_dict.get("updatedAt"), 1)
+        userData_dict["loginAt"] = convert2string(userData_dict.get("loginAt"), 1)
+        userData_dict["type"] = (
+            db.session.query(UserType)
+            .filter(UserType.id == userData_dict.get("type"))
+            .first()
+            .name
+        )
+        return userData_dict
     else:
         return None

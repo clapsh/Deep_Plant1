@@ -112,7 +112,7 @@ class MyFlaskApp:
                     )
             else:
                 return _make_response(
-                    abort(404, description="Wrong Status value ('대기중','반려','승인')"),
+                    self._get_all_status_meat_data(),
                     "http://localhost:3000",
                 )
 
@@ -166,7 +166,7 @@ class MyFlaskApp:
                 self._add_specific_probexpt_data(), "http://localhost:3000"
             )
 
-        @self.app.route("/meat/delete", methods=["POST","GET"])  # 5. meat data 삭제
+        @self.app.route("/meat/delete", methods=["POST", "GET"])  # 5. meat data 삭제
         def delete_meat_data():
             id = request.args.get("id")
             if id:  # 특정 id 삭제
@@ -174,7 +174,9 @@ class MyFlaskApp:
                     self._delete_specific_meat_data(id), "http://localhost:3000"
                 )
             else:  # 전체 육류 데이터 삭제
-                return _make_response(self._delete_range_meat_data(), "http://localhost:3000")
+                return _make_response(
+                    self._delete_range_meat_data(), "http://localhost:3000"
+                )
 
     # 1. Meat DB API
     def _get_specific_meat_data(self, id):
@@ -195,7 +197,7 @@ class MyFlaskApp:
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
         return jsonify({part_id: part_id_meat_list})
 
-    def _get_range_meat_data(self, offset, count):  #
+    def _get_range_meat_data(self, offset, count):  
         offset = int(offset)
         count = int(count)
         meat_data = (
@@ -205,9 +207,30 @@ class MyFlaskApp:
             .limit(count)
             .all()
         )
-        meat_result = [data.id for data in meat_data]
-        result = {"len": Meat.query.count(), "meat_list": meat_result}
+        meat_result = {}
+        id_result = [data.id for data in meat_data]
+        for id in id_result:
+            meat_result[id] = get_meat(rds_db, id)
+            userTemp = get_User(rds_db, meat_result[id].get("userId"))
+            if userTemp:
+                meat_result[id]["name"] = userTemp.get("name")
+            else:
+                meat_result[id]["name"] = userTemp
+            del meat_result[id]["processedmeat"]
+            del meat_result[id]["rawmeat"]
+
+        result = {
+            "DB Total len": Meat.query.count(),
+            "meat_id_list": id_result,
+            "meat_dict": meat_result,
+        }
+
         return jsonify(result)
+
+    def _get_meat_data(self):
+        response = self._get_range_meat_data(0, Meat.query.count())
+        data = response.get_json()
+        return jsonify(data["meat_dict"])
 
     def _get_status_meat_data(self, varified):
         meats_db = Meat.query.all()
@@ -255,10 +278,12 @@ class MyFlaskApp:
             200,
         )
 
-    def _get_meat_data(self):
-        response = self._get_range_meat_data(0, Meat.query.count())
-        data = response.get_json()
-        return jsonify(data["meat_list"])
+    def _get_all_status_meat_data(self):
+        result = {}
+        result["승인"] = self._get_status_meat_data("2")[0].get_json().get("승인")
+        result["반려"] = self._get_status_meat_data("1")[0].get_json().get("반려")
+        result["대기중"] = self._get_status_meat_data("0")[0].get_json().get("대기중")
+        return jsonify(result), 200
 
     def _get_userId_meat_data(self, userId):
         try:
@@ -580,7 +605,6 @@ class MyFlaskApp:
             except Exception as e:
                 rds_db.session.rollback()
                 return str(e)
-            
 
     def _delete_range_meat_data(self):
         # 1. Data Valid Check
@@ -588,19 +612,26 @@ class MyFlaskApp:
             abort(400, description="No data sent for Deletion")
         # 2. 기본 데이터 받아두기
         data = request.get_json()
-        delete_list =list( data.get("delete_id"))
+        delete_list = list(data.get("delete_id"))
         delete_success = []
-        delete_failed = []  
+        delete_failed = []
         try:
             for data in delete_list:
                 result = self._delete_specific_meat_data(data)
-                if isinstance(result, int):  # if the deletion was successful, result would be the id
+                if isinstance(
+                    result, int
+                ):  # if the deletion was successful, result would be the id
                     delete_success.append(result)
                 else:  # if the deletion failed, result would be an error message
                     delete_failed.append({"id": id, "reason": result})
-            return jsonify({"delete_success": delete_list,"delete_failed":delete_failed}), 200
+            return (
+                jsonify(
+                    {"delete_success": delete_list, "delete_failed": delete_failed}
+                ),
+                200,
+            )
         except Exception as e:
-            abort(404,description=3)
+            abort(404, description=3)
 
     # 2. User DB API
     # 3. Utils
@@ -658,7 +689,23 @@ def load_user(user_id):
 
 
 @myApp.app.route("/user", methods=["GET"])
-def get_users_by_type():
+def get_user_data():
+    userId = request.args.get("userId")
+    if userId:
+        return _make_response(_get_users_by_userId(userId), "http://localhost:3000")
+    else:
+        return _make_response(_get_users_by_type(), "http://localhost:3000")
+
+
+def _get_users_by_userId(userId):
+    result = get_User(rds_db, userId)
+    if result is None:
+        abort(404, description=f"No user data about user Id({userId})")
+    else:
+        return jsonify(result), 200
+
+
+def _get_users_by_type():
     # UserType 별로 분류될 유저 정보를 담을 딕셔너리
     user_dict = {}
 
