@@ -197,7 +197,7 @@ class MyFlaskApp:
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
         return jsonify({part_id: part_id_meat_list})
 
-    def _get_range_meat_data(self, offset, count):  
+    def _get_range_meat_data(self, offset, count):
         offset = int(offset)
         count = int(count)
         meat_data = (
@@ -264,6 +264,11 @@ class MyFlaskApp:
         )
         for meat in meat_data:
             temp = get_meat(rds_db, meat.id)
+            userTemp = get_User(rds_db, temp.get("userId"))
+            if userTemp:
+                temp["name"] = userTemp.get("name")
+            else:
+                temp["name"] = userTemp
             del temp["processedmeat"]
             del temp["rawmeat"]
             result.append(temp)
