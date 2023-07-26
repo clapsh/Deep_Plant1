@@ -222,6 +222,17 @@ class MyFlaskApp:
                 return _make_response(
                     self._delete_range_meat_data(), "http://localhost:3000"
                 )
+        @self.app.route("/meat/delete/deep_aging", methods=["POST", "GET"])  # 5. meat data 삭제
+        def delete_deep_aging_data():
+            id = request.args.get("id")
+            seqno = request.args.get("seqno")
+            if id and seqno:
+                # 1. 
+                pass
+            else:
+                return _make_response(
+                    abort(404,description="Invalid id or seqno in URL"), "http://localhost:3000"
+                )
 
     # 1. Meat DB API
     def _get_specific_meat_data(self, id):
@@ -709,6 +720,8 @@ class MyFlaskApp:
         except Exception as e:
             abort(404, description=3)
 
+
+
     # 2. Statistic API
     def _get_num_of_processed_raw(self):
         # Subquery to find meats which have processed data
@@ -956,7 +969,7 @@ def register():
     try:
         rds_db.session.add(user)
     except Exception as e:
-        return jsonify({"message": f"Error Occur {e}"})
+        return jsonify({"message": f"Error Occur {e}"}), 404
     rds_db.session.commit()
     return jsonify({"message": "Registered successfully"}), 200
 
@@ -977,9 +990,9 @@ def duplicate_check():
     id = request.args.get("id")
     user = User.query.filter_by(userId=id).first()
     if user is None:
-        return 200
+        return jsonify({"message":"None Duplicated id"}),200
     else:
-        return 404
+        return jsonify({"message":"Duplicated id"}),404
 
 
 @myApp.app.route("/user/login", methods=["GET"])
