@@ -390,7 +390,7 @@ def find_id(specie_value, primal_value, secondary_value, db):
 
     # If the specie is not found, return an appropriate message
     if not specie:
-        raise Exception("Invalid specie data")
+        raise Exception("Invalid species data")
 
     # Find category using the provided primal_value, secondary_value, and the specie id
     category = (

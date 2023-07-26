@@ -222,16 +222,22 @@ class MyFlaskApp:
                 return _make_response(
                     self._delete_range_meat_data(), "http://localhost:3000"
                 )
-        @self.app.route("/meat/delete/deep_aging", methods=["POST", "GET"])  # 5. meat data 삭제
+
+        @self.app.route(
+            "/meat/delete/deep_aging", methods=["POST", "GET"]
+        )  # 5. meat data 삭제
         def delete_deep_aging_data():
             id = request.args.get("id")
             seqno = request.args.get("seqno")
             if id and seqno:
-                # 1. 
-                pass
+                return _make_response(
+                    self._delete_specific_seqno_meat_data(id, seqno),
+                    "http://localhost:3000",
+                )
             else:
                 return _make_response(
-                    abort(404,description="Invalid id or seqno in URL"), "http://localhost:3000"
+                    abort(404, description="Invalid id or seqno in URL"),
+                    "http://localhost:3000",
                 )
 
     # 1. Meat DB API
@@ -408,6 +414,11 @@ class MyFlaskApp:
                 result = []
                 for meat in meats:
                     temp = get_meat(rds_db, meat.id)
+                    userTemp = get_User(rds_db, temp.get("userId"))
+                    if userTemp:
+                        temp["name"] = userTemp.get("name")
+                    else:
+                        temp["name"] = userTemp
                     del temp["processedmeat"]
                     del temp["rawmeat"]
                     result.append(temp)
@@ -693,6 +704,40 @@ class MyFlaskApp:
                 rds_db.session.rollback()
                 return str(e)
 
+    def _delete_specific_seqno_meat_data(self, id, seqno):
+        with self.app.app_context():
+            # 1. 육류 DB 체크
+            meat = Meat.query.get(id)
+
+            if meat is None:
+                return f"No meat data found with the given ID: {id}"
+            try:
+                sensory_evals = SensoryEval.query.filter_by(id=id, seqno=seqno).all()
+                heatedmeat_evals = HeatedmeatSensoryEval.query.filter_by(
+                    id=id, seqno=seqno
+                ).all()
+                probexpt_datas = ProbexptData.query.filter_by(id=id, seqno=seqno).all()
+                for heatedmeat_eval in heatedmeat_evals:
+                    rds_db.session.delete(heatedmeat_eval)
+                    self.s3_conn.delete_image(
+                        "heatedmeat_sensory_evals", f"{id}-{seqno}"
+                    )
+                    rds_db.session.commit()
+
+                for probexpt_data in probexpt_datas:
+                    rds_db.session.delete(probexpt_data)
+                rds_db.session.commit()
+
+                for sensory_eval in sensory_evals:
+                    rds_db.session.delete(sensory_eval)
+                    self.s3_conn.delete_image("sensory_evals", f"{id}-{seqno}")
+                    rds_db.session.commit()
+
+                return id
+            except Exception as e:
+                rds_db.session.rollback()
+                return str(e)
+
     def _delete_range_meat_data(self):
         # 1. Data Valid Check
         if not request.json:
@@ -719,8 +764,6 @@ class MyFlaskApp:
             )
         except Exception as e:
             abort(404, description=3)
-
-
 
     # 2. Statistic API
     def _get_num_of_processed_raw(self):
@@ -990,9 +1033,9 @@ def duplicate_check():
     id = request.args.get("id")
     user = User.query.filter_by(userId=id).first()
     if user is None:
-        return jsonify({"message":"None Duplicated id"}),200
+        return jsonify({"message": "None Duplicated id"}), 200
     else:
-        return jsonify({"message":"Duplicated id"}),404
+        return jsonify({"message": "Duplicated id"}), 404
 
 
 @myApp.app.route("/user/login", methods=["GET"])
@@ -1007,6 +1050,25 @@ def login():
     user_info["type"] = UserType.query.filter_by(id=user_info["type"]).first().name
 
     return jsonify(user_info), 200
+
+
+@myApp.app.route("/user/delete", methods=["GET"])
+def delete():
+    id = request.args.get("id")
+    user = User.query.filter_by(userId=id).first()
+    # 해당 유저가 데이터베이스에 없을 경우
+    if user is None:
+        return jsonify({f"message": f"No user data in Database (userId: {id})"}), 404
+
+    # 해당 유저가 데이터베이스에 있을 경우 삭제
+    try:
+        rds_db.session.delete(user)
+        rds_db.session.commit()
+        return jsonify({f"message": f"User with userId {id} has been deleted"}), 200
+
+    except Exception as e:
+        rds_db.session.rollback()
+        return jsonify({f"error": str(e)}), 500
 
 
 @myApp.app.route("/user/logout", methods=["GET"])
