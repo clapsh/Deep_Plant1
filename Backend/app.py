@@ -255,8 +255,12 @@ class MyFlaskApp:
             userTemp = get_User(rds_db, meat_result[id].get("userId"))
             if userTemp:
                 meat_result[id]["name"] = userTemp.get("name")
+                meat_result[id]["company"] = userTemp.get("company")
+                meat_result[id]["type"] = userTemp.get("type")
             else:
                 meat_result[id]["name"] = userTemp
+                meat_result[id]["company"] = userTemp
+                meat_result[id]["type"] = userTemp
             del meat_result[id]["processedmeat"]
             del meat_result[id]["rawmeat"]
 
@@ -321,8 +325,12 @@ class MyFlaskApp:
             userTemp = get_User(rds_db, temp.get("userId"))
             if userTemp:
                 temp["name"] = userTemp.get("name")
+                temp["company"] = userTemp.get("company")
+                temp["type"] = userTemp.get("type")
             else:
                 temp["name"] = userTemp
+                temp["company"] = userTemp
+                temp["type"] = userTemp
             del temp["processedmeat"]
             del temp["rawmeat"]
             result.append(temp)
@@ -788,8 +796,27 @@ class MyFlaskApp:
             ),
             200,
         )
+
     def _get_num_by_farmAddr(self):
-        regions = ['강원', '경기', '경남', '경북', '광주','대구', '대전','부산','서울','세종', '울산','인천','전남','전북','제주', '충남', '충북']
+        regions = [
+            "강원",
+            "경기",
+            "경남",
+            "경북",
+            "광주",
+            "대구",
+            "대전",
+            "부산",
+            "서울",
+            "세종",
+            "울산",
+            "인천",
+            "전남",
+            "전북",
+            "제주",
+            "충남",
+            "충북",
+        ]
         result = {}
 
         for speciesId in [0, 1]:  # 0 for cattle, 1 for pig
@@ -797,7 +824,10 @@ class MyFlaskApp:
             for region in regions:
                 count = (
                     Meat.query.join(Category)
-                    .filter(Category.speciesId == speciesId, Meat.farmAddr.like(f"%{region}%"))
+                    .filter(
+                        Category.speciesId == speciesId,
+                        Meat.farmAddr.like(f"%{region}%"),
+                    )
                     .count()
                 )
                 region_counts[region] = count
