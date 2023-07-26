@@ -8,6 +8,7 @@ import s3_connect  # S3 Connect
 import keyId  # Key data in this Backend file
 from flask_sqlalchemy import SQLAlchemy  # For implement RDS database in server
 from sqlalchemy import func, case, nullslast
+
 import db_config  # For implement RDS database in server
 from db_connect import *  # RDS Connect
 import json  # For Using Json files
@@ -54,13 +55,18 @@ class MyFlaskApp:
         self.s3_conn = s3_connect.S3Bucket()
 
         # 4. meat database 요청 Routing
+        @self.app.route("/data", methods=["GET"])
+        def get_db_data():
+            return _make_response(jsonify(get_db_data_()), "http://localhost:3000")
+
         @self.app.route("/meat/get", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
             id = request.args.get("id")
             offset = request.args.get("offset")
             count = request.args.get("count")
             part_id = request.args.get("part_id")
-            period = request.args.get("period")
+            start = request.args.get("start")
+            end = request.args.get("end")
             if id:
                 return _make_response(
                     self._get_specific_meat_data(id), "http://localhost:3000"
@@ -71,7 +77,7 @@ class MyFlaskApp:
                 )
             elif offset and count:
                 return _make_response(
-                    self._get_range_meat_data(offset, count, period),
+                    self._get_range_meat_data(offset, count, start, end),
                     "http://localhost:3000",
                 )
 
@@ -133,12 +139,14 @@ class MyFlaskApp:
             statusType_value = request.args.get("statusType")
             offset = request.args.get("offset")
             count = request.args.get("count")
-            period = request.args.get("period")  # 7일, 1개월, 1분기, 1년
+            start = request.args.get("start")
+            end = request.args.get("end")
+
             if statusType_value:
                 if offset and count:
                     return _make_response(
                         self._get_range_status_meat_data(
-                            statusType_value, offset, count, period
+                            statusType_value, offset, count, start, end
                         ),
                         "http://localhost:3000",
                     )
@@ -234,18 +242,19 @@ class MyFlaskApp:
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
         return jsonify({part_id: part_id_meat_list})
 
-    def _get_range_meat_data(self, offset, count, period=None):
+    def _get_range_meat_data(self, offset, count, start, end):
         offset = int(offset)
         count = int(count)
+        start = convert2datetime(start, 1)
+        end = convert2datetime(end, 1)
         query = (
             Meat.query.options()
             .order_by(Meat.createdAt.desc())
             .offset(offset * count)
             .limit(count)
         )
-        if period is not None:
-            date_filter = datetime.now() - timedelta(days=int(period))
-            query = query.filter(Meat.createdAt >= date_filter)
+        if start is not None and end is not None:
+            query = query.filter(Meat.createdAt.between(start, end))
 
         meat_data = query.all()
         meat_result = {}
@@ -298,11 +307,12 @@ class MyFlaskApp:
                 meat_list.append(temp)
         return jsonify({f"{varified}": meat_list}), 200
 
-    def _get_range_status_meat_data(self, varified, offset, count, period=None):
+    def _get_range_status_meat_data(self, varified, offset, count, start, end):
         offset = int(offset)
         count = int(count)
         varified = int(varified)
-
+        start = convert2datetime(start, 1)
+        end = convert2datetime(end, 1)
         # Base query
         query = (
             Meat.query.options()
@@ -313,9 +323,8 @@ class MyFlaskApp:
         )
 
         # Date Filter
-        if period is not None:
-            date_filter = datetime.now() - timedelta(days=int(period))
-            query = query.filter(Meat.createdAt >= date_filter)
+        if start is not None and end is not None:
+            query = query.filter(Meat.createdAt.between(start, end))
 
         result = []
         meat_data = query.all()

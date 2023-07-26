@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import DateTime, ForeignKeyConstraint
-from sqlalchemy.orm import backref
+from sqlalchemy.orm import backref, joinedload
 from utils import *
 import hashlib  # For password hashing
 import uuid  # For making ID
@@ -145,7 +145,10 @@ class AI_SensoryEval(rds_db.Model):
     )  # 관능검사 생성한 유저 ID
     period = rds_db.Column(rds_db.Integer, nullable=False)  # 도축일로부터 경과된 시간
     imagePath = rds_db.Column(rds_db.String(255))  # xai 관능검사 이미지 경로
+    ### AI 파트는 다른 점
     xai_imagePath = rds_db.Column(rds_db.String(255))
+    xai_gradeNum = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("gradeNum.id"))
+
     deepAgingId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("deep_aging.deepAgingId")
     )  # 원육이면 null, 가공육이면 해당 딥에이징 정보 ID
@@ -226,9 +229,9 @@ class ProbexptData(rds_db.Model):
         rds_db.ForeignKeyConstraint(
             ["id", "seqno"], ["sensory_eval.id", "sensory_eval.seqno"]
         ),
-        rds_db.CheckConstraint("0 <= DL AND DL <= 100", name="check_DL_percentage"),
-        rds_db.CheckConstraint("0 <= CL AND CL <= 100", name="check_CL_percentage"),
-        rds_db.CheckConstraint("0 <= RW AND RW <= 100", name="check_RW_percentage"),
+        rds_db.CheckConstraint('0 <= "DL" AND "DL" <= 100', name="check_DL_percentage"),
+        rds_db.CheckConstraint('0 <= "CL" AND "CL" <= 100', name="check_CL_percentage"),
+        rds_db.CheckConstraint('0 <= "RW" AND "RW" <= 100', name="check_RW_percentage"),
     )
 
     # 2. 연구실 메타 데이터
@@ -804,3 +807,24 @@ def get_User(db, userId):
         return userData_dict
     else:
         return None
+
+
+def get_db_data_():
+    species_all = Species.query.all()
+    result = {}
+    for species in species_all:
+        # Use joinedload to avoid N+1 problem
+        categories = (
+            Category.query.options(joinedload(Category.meats))
+            .filter_by(speciesId=species.id)
+            .all()
+        )
+        category_dict = {}
+        for category in categories:
+            if category.primalValue not in category_dict:
+                category_dict[category.primalValue] = [category.secondaryValue]
+            else:
+                category_dict[category.primalValue].append(category.secondaryValue)
+
+        result[species.value] = category_dict
+    return result
