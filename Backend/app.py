@@ -7,6 +7,7 @@ import firebase_connect  # Firebase Connect
 import s3_connect  # S3 Connect
 import keyId  # Key data in this Backend file
 from flask_sqlalchemy import SQLAlchemy  # For implement RDS database in server
+from sqlalchemy import func, case, nullslast
 import db_config  # For implement RDS database in server
 from db_connect import *  # RDS Connect
 import json  # For Using Json files
@@ -17,7 +18,7 @@ from werkzeug.security import (
     check_password_hash,
 )  # For password hashing
 import hashlib  # For password hashing
-from datetime import datetime  # 시간 출력용
+from datetime import datetime, timedelta  # 시간 출력용
 from flask import abort  # For data non existence
 from flask import make_response  # For making response in flask
 from werkzeug.exceptions import BadRequest  # For making Error response
@@ -59,6 +60,7 @@ class MyFlaskApp:
             offset = request.args.get("offset")
             count = request.args.get("count")
             part_id = request.args.get("part_id")
+            period = request.args.get("period")
             if id:
                 return _make_response(
                     self._get_specific_meat_data(id), "http://localhost:3000"
@@ -69,11 +71,45 @@ class MyFlaskApp:
                 )
             elif offset and count:
                 return _make_response(
-                    self._get_range_meat_data(offset, count), "http://localhost:3000"
+                    self._get_range_meat_data(offset, count, period),
+                    "http://localhost:3000",
                 )
 
             else:
                 return _make_response(self._get_meat_data(), "http://localhost:3000")
+
+        @self.app.route("/meat/statistic", methods=["GET"])
+        def get_statistic_meat_data():
+            id = request.args.get("id")
+            statisticType = safe_int(request.args.get("type"))
+            if id:  # 1. 특정 육류 정보에 대한 통계
+                pass
+            else:  # 2. 전체에 대한 통계
+                if statisticType == 0:  # 1. 신선육, 숙성육 비율(소,돼지,전체)
+                    return _make_response(
+                        self._get_num_of_processed_raw(),
+                        "http://localhost:3000",
+                    )
+                elif statisticType == 1:  # 2. 소, 돼지 개수
+                    return _make_response(
+                        self._get_num_of_cattle_pig(),
+                        "http://localhost:3000",
+                    )
+                elif statisticType == 2:  # 3. 대분류 부위 별 개수(소, 돼지)
+                    return _make_response(
+                        self._get_num_of_primal_part(),
+                        "http://localhost:3000",
+                    )
+                elif statisticType == 3:  # 4. 농장 지역 별 개수(소,돼지)
+                    return _make_response(
+                        self._get_num_by_farmAddr(),
+                        "http://localhost:3000",
+                    )
+                else:
+                    return _make_response(
+                        abort(404, description="Wrong data in type params"),
+                        "http://localhost:3000",
+                    )
 
         @self.app.route("/meat/user", methods=["GET"])
         def get_user_meat_data():
@@ -97,11 +133,12 @@ class MyFlaskApp:
             statusType_value = request.args.get("statusType")
             offset = request.args.get("offset")
             count = request.args.get("count")
+            period = request.args.get("period")  # 7일, 1개월, 1분기, 1년
             if statusType_value:
                 if offset and count:
                     return _make_response(
                         self._get_range_status_meat_data(
-                            statusType_value, offset, count
+                            statusType_value, offset, count, period
                         ),
                         "http://localhost:3000",
                     )
@@ -197,16 +234,20 @@ class MyFlaskApp:
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
         return jsonify({part_id: part_id_meat_list})
 
-    def _get_range_meat_data(self, offset, count):
+    def _get_range_meat_data(self, offset, count, period=None):
         offset = int(offset)
         count = int(count)
-        meat_data = (
+        query = (
             Meat.query.options()
             .order_by(Meat.createdAt.desc())
             .offset(offset * count)
             .limit(count)
-            .all()
         )
+        if period is not None:
+            date_filter = datetime.now() - timedelta(days=int(period))
+            query = query.filter(Meat.createdAt >= date_filter)
+
+        meat_data = query.all()
         meat_result = {}
         id_result = [data.id for data in meat_data]
         for id in id_result:
@@ -233,13 +274,17 @@ class MyFlaskApp:
         return jsonify(data["meat_dict"])
 
     def _get_status_meat_data(self, varified):
+        try:
+            varified = int(varified)
+        except Exception as e:
+            abort(404, description=e)
         meats_db = Meat.query.all()
         meat_list = []
-        if varified == "2":  # 승인
+        if varified == 2:  # 승인
             varified = "승인"
-        elif varified == "1":  # 반려
+        elif varified == 1:  # 반려
             varified = "반려"
-        elif varified == "0":
+        elif varified == 0:
             varified = "대기중"
         for meat in meats_db:
             temp = get_meat(rds_db, meat.id)
@@ -249,19 +294,28 @@ class MyFlaskApp:
                 meat_list.append(temp)
         return jsonify({f"{varified}": meat_list}), 200
 
-    def _get_range_status_meat_data(self, varified, offset, count):
+    def _get_range_status_meat_data(self, varified, offset, count, period=None):
         offset = int(offset)
         count = int(count)
         varified = int(varified)
-        result = []
-        meat_data = (
+
+        # Base query
+        query = (
             Meat.query.options()
             .filter_by(statusType=varified)
             .order_by(Meat.createdAt.desc())
             .offset(offset * count)
             .limit(count)
-            .all()
         )
+
+        # Date Filter
+        if period is not None:
+            date_filter = datetime.now() - timedelta(days=int(period))
+            query = query.filter(Meat.createdAt >= date_filter)
+
+        result = []
+        meat_data = query.all()
+
         for meat in meat_data:
             temp = get_meat(rds_db, meat.id)
             userTemp = get_User(rds_db, temp.get("userId"))
@@ -638,7 +692,129 @@ class MyFlaskApp:
         except Exception as e:
             abort(404, description=3)
 
-    # 2. User DB API
+    # 2. Statistic API
+    def _get_num_of_processed_raw(self):
+        # Subquery to find meats which have processed data
+        processed_meats_subquery = (
+            rds_db.session.query(Meat.id)
+            .join(SensoryEval)
+            .filter(SensoryEval.seqno > 0)
+            .subquery()
+        )
+        processed_meats_select = processed_meats_subquery.select()
+        # 1. Category.specieId가 0이면서 SensoryEval.seqno 값이 0인 데이터, 1인 데이터
+        fresh_cattle_count = (
+            Meat.query.join(Category)
+            .filter(Category.speciesId == 0, ~Meat.id.in_(processed_meats_select))
+            .count()
+        )
+        processed_cattle_count = (
+            Meat.query.join(Category)
+            .filter(Category.speciesId == 0, Meat.id.in_(processed_meats_select))
+            .count()
+        )
+
+        # 2. Category.specieId가 1이면서 SensoryEval.seqno 값이 0인 데이터, 1인 데이터
+        fresh_pig_count = (
+            Meat.query.join(Category)
+            .filter(Category.speciesId == 1, ~Meat.id.in_(processed_meats_select))
+            .count()
+        )
+        processed_pig_count = (
+            Meat.query.join(Category)
+            .filter(Category.speciesId == 1, Meat.id.in_(processed_meats_select))
+            .count()
+        )
+
+        # 3. 전체 데이터에서 SensoryEval.seqno 값이 0인 데이터, 1인 데이터
+        fresh_meat_count = Meat.query.filter(
+            ~Meat.id.in_(processed_meats_select)
+        ).count()
+        processed_meat_count = Meat.query.filter(
+            Meat.id.in_(processed_meats_select)
+        ).count()
+        # Returning the counts in JSON format
+        return (
+            jsonify(
+                {
+                    "cattle_counts": {
+                        "raw": fresh_cattle_count,
+                        "processed": processed_cattle_count,
+                    },
+                    "pig_counts": {
+                        "raw": fresh_pig_count,
+                        "processed": processed_pig_count,
+                    },
+                    "total_counts": {
+                        "raw": fresh_meat_count,
+                        "processed": processed_meat_count,
+                    },
+                }
+            ),
+            200,
+        )
+
+    def _get_num_of_cattle_pig(self):
+        cow_count = Meat.query.join(Category).filter(Category.speciesId == 0).count()
+        pig_count = Meat.query.join(Category).filter(Category.speciesId == 1).count()
+        return jsonify({"cattle_count": cow_count, "pig_count": pig_count}), 200
+
+    def _get_num_of_primal_part(self):
+        # 1. Category.specieId가 0일때 해당 Category.primalValue 별로 육류의 개수를 추출
+        count_by_primal_value_beef = (
+            rds_db.session.query(Category.primalValue, func.count(Meat.id))
+            .join(Meat, Meat.categoryId == Category.id)
+            .filter(Category.speciesId == 0)
+            .group_by(Category.primalValue)
+            .all()
+        )
+
+        # 2. Category.specieId가 1일때 해당 Category.primalValue 별로 육류의 개수를 추출
+        count_by_primal_value_pork = (
+            rds_db.session.query(Category.primalValue, func.count(Meat.id))
+            .join(Meat, Meat.categoryId == Category.id)
+            .filter(Category.speciesId == 1)
+            .group_by(Category.primalValue)
+            .all()
+        )
+
+        # Returning the counts in JSON format
+        return (
+            jsonify(
+                {
+                    "beef_counts_by_primal_value": dict(count_by_primal_value_beef),
+                    "pork_counts_by_primal_value": dict(count_by_primal_value_pork),
+                }
+            ),
+            200,
+        )
+    def _get_num_by_farmAddr(self):
+        regions = ['강원', '경기', '경남', '경북', '광주','대구', '대전','부산','서울','세종', '울산','인천','전남','전북','제주', '충남', '충북']
+        result = {}
+
+        for speciesId in [0, 1]:  # 0 for cattle, 1 for pig
+            region_counts = {}
+            for region in regions:
+                count = (
+                    Meat.query.join(Category)
+                    .filter(Category.speciesId == speciesId, Meat.farmAddr.like(f"%{region}%"))
+                    .count()
+                )
+                region_counts[region] = count
+            if speciesId == 0:
+                result["cattle_counts_by_region"] = region_counts
+            else:
+                result["pig_counts_by_region"] = region_counts
+
+        # For total data
+        total_region_counts = {}
+        for region in regions:
+            count = Meat.query.filter(Meat.farmAddr.like(f"%{region}%")).count()
+            total_region_counts[region] = count
+        result["total_counts_by_region"] = total_region_counts
+
+        return jsonify(result), 200
+
     # 3. Utils
 
     def transfer_folder_image(self, id, new_meat, folder):
@@ -693,6 +869,7 @@ def load_user(user_id):
     return User.query.get(user_id)
 
 
+# 2. User DB API
 @myApp.app.route("/user", methods=["GET"])
 def get_user_data():
     userId = request.args.get("userId")
