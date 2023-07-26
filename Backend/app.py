@@ -26,6 +26,7 @@ from werkzeug.exceptions import BadRequest  # For making Error response
 from werkzeug.utils import secure_filename  # For checking file name from react page
 from datetime import datetime
 from utils import *
+from flask_cors import CORS
 
 """
 flask run --host=0.0.0.0 --port=8080
@@ -89,7 +90,10 @@ class MyFlaskApp:
             id = request.args.get("id")
             statisticType = safe_int(request.args.get("type"))
             if id:  # 1. 특정 육류 정보에 대한 통계
-                pass
+                return _make_response(
+                    abort(404, description="Wrong data in type params"),
+                    "http://localhost:3000",
+                )
             else:  # 2. 전체에 대한 통계
                 if statisticType == 0:  # 1. 신선육, 숙성육 비율(소,돼지,전체)
                     return _make_response(
@@ -111,6 +115,8 @@ class MyFlaskApp:
                         self._get_num_by_farmAddr(),
                         "http://localhost:3000",
                     )
+                elif statisticType == 4: # 
+                    pass
                 else:
                     return _make_response(
                         abort(404, description="Wrong data in type params"),
@@ -259,7 +265,7 @@ class MyFlaskApp:
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
         return jsonify({part_id: part_id_meat_list})
 
-    def _get_range_meat_data(self, offset, count, start, end):
+    def _get_range_meat_data(self, offset, count, start=None, end=None):
         offset = int(offset)
         count = int(count)
         start = convert2datetime(start, 1)
@@ -324,7 +330,9 @@ class MyFlaskApp:
                 meat_list.append(temp)
         return jsonify({f"{varified}": meat_list}), 200
 
-    def _get_range_status_meat_data(self, varified, offset, count, start, end):
+    def _get_range_status_meat_data(
+        self, varified, offset, count, start=None, end=None
+    ):
         offset = int(offset)
         count = int(count)
         varified = int(varified)
@@ -953,6 +961,7 @@ def _make_response(data, url):  # For making response
 
 # Init RDS
 myApp = MyFlaskApp(db_config.config)
+CORS(myApp.app)
 
 # 1. Login/Register Routing
 login_manager = LoginManager()
