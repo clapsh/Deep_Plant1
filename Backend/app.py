@@ -89,6 +89,7 @@ class MyFlaskApp:
         def get_statistic_meat_data():
             id = request.args.get("id")
             statisticType = safe_int(request.args.get("type"))
+            seqno = request.args.get("seqno")
             if id:  # 1. 특정 육류 정보에 대한 통계
                 return _make_response(
                     abort(404, description="Wrong data in type params"),
@@ -115,8 +116,37 @@ class MyFlaskApp:
                         self._get_num_by_farmAddr(),
                         "http://localhost:3000",
                     )
-                elif statisticType == 4: # 
-                    pass
+                elif statisticType == 4:  # 5. 신선육 맛데이터 항목 별 평균, 최대, 최소치
+                    return _make_response(
+                        self._get_probexpt_of_rawmeat(),
+                        "http://localhost:3000",
+                    )
+                elif statisticType == 5:  # 6. 처리육 맛데이터 항목 별 평균, 최대, 최소치
+                    return _make_response(
+                        self._get_probexpt_of_processedmeat(seqno),
+                        "http://localhost:3000",
+                    )
+                elif statisticType == 6:  # 6. 신선육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
+                    return _make_response(
+                        self._get_senseval_of_rawmeat(),
+                        "http://localhost:3000",
+                    )
+                elif statisticType == 7:  # 6. 처리육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
+                    return _make_response(
+                        self._get_senseval_of_processedmeat(seqno),
+                        "http://localhost:3000",
+                    )
+                elif statisticType == 8:  # 7. 가열한 원육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
+                    return _make_response(
+                        self._get_senseval_of_raw_heatedmeat(),
+                        "http://localhost:3000",
+                    )
+                elif statisticType == 9:  # 8. 가열한 처리육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
+                    return _make_response(
+                        self._get_senseval_of_processed_heatedmeat(seqno),
+                        "http://localhost:3000",
+                    )
+
                 else:
                     return _make_response(
                         abort(404, description="Wrong data in type params"),
@@ -918,6 +948,343 @@ class MyFlaskApp:
 
         return jsonify(result), 200
 
+    def _get_probexpt_of_rawmeat(self):
+        # 각 필드의 평균값, 최대값, 최소값 계산
+        stats = {}
+        for field in ["sourness", "bitterness", "umami", "richness"]:
+            avg = (
+                rds_db.session.query(func.avg(getattr(ProbexptData, field)))
+                .filter(ProbexptData.seqno == 0)
+                .scalar()
+            )
+            max_value = (
+                rds_db.session.query(func.max(getattr(ProbexptData, field)))
+                .filter(ProbexptData.seqno == 0)
+                .scalar()
+            )
+            min_value = (
+                rds_db.session.query(func.min(getattr(ProbexptData, field)))
+                .filter(ProbexptData.seqno == 0)
+                .scalar()
+            )
+
+            # 실제로 존재하는 값들 찾기
+            unique_values_query = (
+                rds_db.session.query(getattr(ProbexptData, field))
+                .filter(ProbexptData.seqno == 0)
+                .distinct()
+            )
+            unique_values = [value[0] for value in unique_values_query.all()]
+
+            stats[field] = {
+                "avg": avg,
+                "max": max_value,
+                "min": min_value,
+                "unique_values": unique_values,
+            }
+
+        return jsonify(stats)
+
+    def _get_probexpt_of_processedmeat(self, seqno):
+        # 각 필드의 평균값, 최대값, 최소값 계산
+        stats = {}
+        seqno = safe_int(seqno)
+        if seqno:
+            for field in ["sourness", "bitterness", "umami", "richness"]:
+                avg = (
+                    rds_db.session.query(func.avg(getattr(ProbexptData, field)))
+                    .filter(ProbexptData.seqno == seqno)
+                    .scalar()
+                )
+                max_value = (
+                    rds_db.session.query(func.max(getattr(ProbexptData, field)))
+                    .filter(ProbexptData.seqno == seqno)
+                    .scalar()
+                )
+                min_value = (
+                    rds_db.session.query(func.min(getattr(ProbexptData, field)))
+                    .filter(ProbexptData.seqno == seqno)
+                    .scalar()
+                )
+
+                # 실제로 존재하는 값들 찾기
+                unique_values_query = (
+                    rds_db.session.query(getattr(ProbexptData, field))
+                    .filter(ProbexptData.seqno == seqno)
+                    .distinct()
+                )
+                unique_values = [value[0] for value in unique_values_query.all()]
+
+                stats[field] = {
+                    "avg": avg,
+                    "max": max_value,
+                    "min": min_value,
+                    "unique_values": unique_values,
+                }
+        else:
+            for field in ["sourness", "bitterness", "umami", "richness"]:
+                avg = (
+                    rds_db.session.query(func.avg(getattr(ProbexptData, field)))
+                    .filter(ProbexptData.seqno != 0)
+                    .scalar()
+                )
+                max_value = (
+                    rds_db.session.query(func.max(getattr(ProbexptData, field)))
+                    .filter(ProbexptData.seqno != 0)
+                    .scalar()
+                )
+                min_value = (
+                    rds_db.session.query(func.min(getattr(ProbexptData, field)))
+                    .filter(ProbexptData.seqno != 0)
+                    .scalar()
+                )
+
+                # 실제로 존재하는 값들 찾기
+                unique_values_query = (
+                    rds_db.session.query(getattr(ProbexptData, field))
+                    .filter(ProbexptData.seqno != 0)
+                    .distinct()
+                )
+                unique_values = [value[0] for value in unique_values_query.all()]
+
+                stats[field] = {
+                    "avg": avg,
+                    "max": max_value,
+                    "min": min_value,
+                    "unique_values": unique_values,
+                }
+
+        return jsonify(stats)
+
+    def _get_senseval_of_rawmeat(self):
+        # 각 필드의 평균값, 최대값, 최소값 계산
+        stats = {}
+        for field in ["marbling", "color", "texture", "surfaceMoisture", "overall"]:
+            avg = (
+                rds_db.session.query(func.avg(getattr(SensoryEval, field)))
+                .filter(SensoryEval.seqno == 0)
+                .scalar()
+            )
+            max_value = (
+                rds_db.session.query(func.max(getattr(SensoryEval, field)))
+                .filter(SensoryEval.seqno == 0)
+                .scalar()
+            )
+            min_value = (
+                rds_db.session.query(func.min(getattr(SensoryEval, field)))
+                .filter(SensoryEval.seqno == 0)
+                .scalar()
+            )
+
+            # 실제로 존재하는 값들 찾기
+            unique_values_query = (
+                rds_db.session.query(getattr(SensoryEval, field))
+                .filter(SensoryEval.seqno == 0)
+                .distinct()
+            )
+            unique_values = [value[0] for value in unique_values_query.all()]
+
+            stats[field] = {
+                "avg": avg,
+                "max": max_value,
+                "min": min_value,
+                "unique_values": unique_values,
+            }
+
+        return jsonify(stats)
+
+    def _get_senseval_of_processedmeat(self, seqno):
+        stats = {}
+        seqno = safe_int(seqno)
+        if seqno:
+            # 각 필드의 평균값, 최대값, 최소값 계산
+            for field in ["marbling", "color", "texture", "surfaceMoisture", "overall"]:
+                avg = (
+                    rds_db.session.query(func.avg(getattr(SensoryEval, field)))
+                    .filter(SensoryEval.seqno == seqno)
+                    .scalar()
+                )
+                max_value = (
+                    rds_db.session.query(func.max(getattr(SensoryEval, field)))
+                    .filter(SensoryEval.seqno == seqno)
+                    .scalar()
+                )
+                min_value = (
+                    rds_db.session.query(func.min(getattr(SensoryEval, field)))
+                    .filter(SensoryEval.seqno == seqno)
+                    .scalar()
+                )
+
+                # 실제로 존재하는 값들 찾기
+                unique_values_query = (
+                    rds_db.session.query(getattr(SensoryEval, field))
+                    .filter(SensoryEval.seqno == seqno)
+                    .distinct()
+                )
+                unique_values = [value[0] for value in unique_values_query.all()]
+
+                stats[field] = {
+                    "avg": avg,
+                    "max": max_value,
+                    "min": min_value,
+                    "unique_values": unique_values,
+                }
+        else:
+            # 각 필드의 평균값, 최대값, 최소값 계산
+            for field in ["marbling", "color", "texture", "surfaceMoisture", "overall"]:
+                avg = (
+                    rds_db.session.query(func.avg(getattr(SensoryEval, field)))
+                    .filter(SensoryEval.seqno != 0)
+                    .scalar()
+                )
+                max_value = (
+                    rds_db.session.query(func.max(getattr(SensoryEval, field)))
+                    .filter(SensoryEval.seqno != 0)
+                    .scalar()
+                )
+                min_value = (
+                    rds_db.session.query(func.min(getattr(SensoryEval, field)))
+                    .filter(SensoryEval.seqno != 0)
+                    .scalar()
+                )
+
+                # 실제로 존재하는 값들 찾기
+                unique_values_query = (
+                    rds_db.session.query(getattr(SensoryEval, field))
+                    .filter(SensoryEval.seqno != 0)
+                    .distinct()
+                )
+                unique_values = [value[0] for value in unique_values_query.all()]
+
+                stats[field] = {
+                    "avg": avg,
+                    "max": max_value,
+                    "min": min_value,
+                    "unique_values": unique_values,
+                }
+
+        return jsonify(stats)
+
+    def _get_senseval_of_raw_heatedmeat(self):
+        # 각 필드의 평균값, 최대값, 최소값 계산
+        stats = {}
+        for field in ["flavor", "juiciness", "tenderness", "umami", "palability"]:
+            avg = (
+                rds_db.session.query(func.avg(getattr(HeatedmeatSensoryEval, field)))
+                .filter(HeatedmeatSensoryEval.seqno == 0)
+                .scalar()
+            )
+            max_value = (
+                rds_db.session.query(func.max(getattr(HeatedmeatSensoryEval, field)))
+                .filter(HeatedmeatSensoryEval.seqno == 0)
+                .scalar()
+            )
+            min_value = (
+                rds_db.session.query(func.min(getattr(HeatedmeatSensoryEval, field)))
+                .filter(HeatedmeatSensoryEval.seqno == 0)
+                .scalar()
+            )
+
+            # 실제로 존재하는 값들 찾기
+            unique_values_query = (
+                rds_db.session.query(getattr(HeatedmeatSensoryEval, field))
+                .filter(HeatedmeatSensoryEval.seqno == 0)
+                .distinct()
+            )
+            unique_values = [value[0] for value in unique_values_query.all()]
+
+            stats[field] = {
+                "avg": avg,
+                "max": max_value,
+                "min": min_value,
+                "unique_values": unique_values,
+            }
+
+        return jsonify(stats)
+
+    def _get_senseval_of_processed_heatedmeat(self, seqno):
+        # 각 필드의 평균값, 최대값, 최소값 계산
+        stats = {}
+        seqno = safe_int(seqno)
+        if seqno:
+            for field in ["flavor", "juiciness", "tenderness", "umami", "palability"]:
+                avg = (
+                    rds_db.session.query(
+                        func.avg(getattr(HeatedmeatSensoryEval, field))
+                    )
+                    .filter(HeatedmeatSensoryEval.seqno == seqno)
+                    .scalar()
+                )
+                max_value = (
+                    rds_db.session.query(
+                        func.max(getattr(HeatedmeatSensoryEval, field))
+                    )
+                    .filter(HeatedmeatSensoryEval.seqno == seqno)
+                    .scalar()
+                )
+                min_value = (
+                    rds_db.session.query(
+                        func.min(getattr(HeatedmeatSensoryEval, field))
+                    )
+                    .filter(HeatedmeatSensoryEval.seqno == seqno)
+                    .scalar()
+                )
+
+                # 실제로 존재하는 값들 찾기
+                unique_values_query = (
+                    rds_db.session.query(getattr(HeatedmeatSensoryEval, field))
+                    .filter(HeatedmeatSensoryEval.seqno == seqno)
+                    .distinct()
+                )
+                unique_values = [value[0] for value in unique_values_query.all()]
+
+                stats[field] = {
+                    "avg": avg,
+                    "max": max_value,
+                    "min": min_value,
+                    "unique_values": unique_values,
+                }
+        else:
+            for field in ["flavor", "juiciness", "tenderness", "umami", "palability"]:
+                avg = (
+                    rds_db.session.query(
+                        func.avg(getattr(HeatedmeatSensoryEval, field))
+                    )
+                    .filter(HeatedmeatSensoryEval.seqno != 0)
+                    .scalar()
+                )
+                max_value = (
+                    rds_db.session.query(
+                        func.max(getattr(HeatedmeatSensoryEval, field))
+                    )
+                    .filter(HeatedmeatSensoryEval.seqno != 0)
+                    .scalar()
+                )
+                min_value = (
+                    rds_db.session.query(
+                        func.min(getattr(HeatedmeatSensoryEval, field))
+                    )
+                    .filter(HeatedmeatSensoryEval.seqno != 0)
+                    .scalar()
+                )
+
+                # 실제로 존재하는 값들 찾기
+                unique_values_query = (
+                    rds_db.session.query(getattr(HeatedmeatSensoryEval, field))
+                    .filter(HeatedmeatSensoryEval.seqno != 0)
+                    .distinct()
+                )
+                unique_values = [value[0] for value in unique_values_query.all()]
+
+                stats[field] = {
+                    "avg": avg,
+                    "max": max_value,
+                    "min": min_value,
+                    "unique_values": unique_values,
+                }
+
+        return jsonify(stats)
+
     # 3. Utils
 
     def transfer_folder_image(self, id, new_meat, folder):
@@ -1083,7 +1450,7 @@ def delete():
 @myApp.app.route("/user/logout", methods=["GET"])
 def logout():
     id = request.args.get("id")
-    return 200
+    return id, 200
 
 
 def scheduler_function():  # 일정 주기마다 실행하는 함수
