@@ -89,7 +89,6 @@ class MyFlaskApp:
         def get_statistic_meat_data():
             id = request.args.get("id")
             statisticType = safe_int(request.args.get("type"))
-            seqno = request.args.get("seqno")
             if id:  # 1. 특정 육류 정보에 대한 통계
                 return _make_response(
                     abort(404, description="Wrong data in type params"),
@@ -116,37 +115,8 @@ class MyFlaskApp:
                         self._get_num_by_farmAddr(),
                         "http://localhost:3000",
                     )
-                elif statisticType == 4:  # 5. 신선육 맛데이터 항목 별 평균, 최대, 최소치
-                    return _make_response(
-                        self._get_probexpt_of_rawmeat(),
-                        "http://localhost:3000",
-                    )
-                elif statisticType == 5:  # 6. 처리육 맛데이터 항목 별 평균, 최대, 최소치
-                    return _make_response(
-                        self._get_probexpt_of_processedmeat(seqno),
-                        "http://localhost:3000",
-                    )
-                elif statisticType == 6:  # 6. 신선육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
-                    return _make_response(
-                        self._get_senseval_of_rawmeat(),
-                        "http://localhost:3000",
-                    )
-                elif statisticType == 7:  # 6. 처리육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
-                    return _make_response(
-                        self._get_senseval_of_processedmeat(seqno),
-                        "http://localhost:3000",
-                    )
-                elif statisticType == 8:  # 7. 가열한 원육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
-                    return _make_response(
-                        self._get_senseval_of_raw_heatedmeat(),
-                        "http://localhost:3000",
-                    )
-                elif statisticType == 9:  # 8. 가열한 처리육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
-                    return _make_response(
-                        self._get_senseval_of_processed_heatedmeat(seqno),
-                        "http://localhost:3000",
-                    )
-
+                elif statisticType == 4: # 
+                    pass
                 else:
                     return _make_response(
                         abort(404, description="Wrong data in type params"),
@@ -1333,7 +1303,7 @@ CORS(myApp.app)
 # 1. Login/Register Routing
 login_manager = LoginManager()
 login_manager.init_app(myApp.app)
-
+ 
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -1450,7 +1420,7 @@ def delete():
 @myApp.app.route("/user/logout", methods=["GET"])
 def logout():
     id = request.args.get("id")
-    return id, 200
+    return 200
 
 
 def scheduler_function():  # 일정 주기마다 실행하는 함수
