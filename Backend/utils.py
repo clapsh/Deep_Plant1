@@ -206,6 +206,7 @@ def item_encoder(data_dict, item, input_data=None):
         "jobTitle",
         "homeAddr",
         "imagePath",
+        "xai_imagePath"
     ]
     int_cvr = ["period", "minute", "seqno"]
     float_cvr = [

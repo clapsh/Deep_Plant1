@@ -333,11 +333,10 @@ class MyFlaskApp:
         query = (
             Meat.query.options()
             .order_by(Meat.createdAt.desc())
-            .offset(offset * count)
-            .limit(count)
         )
         if start is not None and end is not None:
             query = query.filter(Meat.createdAt.between(start, end))
+        query = query.offset(offset * count).limit(count)
 
         meat_data = query.all()
         meat_result = {}
@@ -403,13 +402,13 @@ class MyFlaskApp:
             Meat.query.options()
             .filter_by(statusType=varified)
             .order_by(Meat.createdAt.desc())
-            .offset(offset * count)
-            .limit(count)
         )
 
         # Date Filter
         if start is not None and end is not None:
             query = query.filter(Meat.createdAt.between(start, end))
+        
+        query = query.offset(offset * count).limit(count)
 
         result = []
         meat_data = query.all()
@@ -428,6 +427,7 @@ class MyFlaskApp:
             del temp["processedmeat"]
             del temp["rawmeat"]
             result.append(temp)
+        varified_id = varified
         if varified == 2:
             varified = "승인"
         elif varified == 1:
@@ -435,7 +435,12 @@ class MyFlaskApp:
         else:
             varified = "대기중"
         return (
-            jsonify({f"{varified}": result}),
+            jsonify(
+                {
+                    "DB Total len": Meat.query.filter_by(statusType=varified_id).count(),
+                    f"{varified}": result,
+                }
+            ),
             200,
         )
 

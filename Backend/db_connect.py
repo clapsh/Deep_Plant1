@@ -139,21 +139,23 @@ class AI_SensoryEval(rds_db.Model):
     __table_args__ = (rds_db.PrimaryKeyConstraint("id", "seqno"),)
 
     # 2. 관능검사 메타 데이터
-    createdAt = rds_db.Column(DateTime, nullable=False)  # 관능검사 생성 시간
+    createdAt = rds_db.Column(DateTime, nullable=False)  # 관능검사 생성 시간 ->  AI 팀 반환
     userId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("users.userId"), nullable=False
     )  # 관능검사 생성한 유저 ID
     period = rds_db.Column(rds_db.Integer, nullable=False)  # 도축일로부터 경과된 시간
-    imagePath = rds_db.Column(rds_db.String(255))  # xai 관능검사 이미지 경로
+    imagePath = rds_db.Column(rds_db.String(255))
     ### AI 파트는 다른 점
-    xai_imagePath = rds_db.Column(rds_db.String(255))
-    xai_gradeNum = rds_db.Column(rds_db.Integer, rds_db.ForeignKey("gradeNum.id"))
+    xai_imagePath = rds_db.Column(rds_db.String(255))  # xai 관능검사 이미지 경로 -> AI 팀 반환
+    xai_gradeNum = rds_db.Column(
+        rds_db.Integer, rds_db.ForeignKey("gradeNum.id")
+    )  # AI 팀 반환
 
     deepAgingId = rds_db.Column(
         rds_db.String(255), rds_db.ForeignKey("deep_aging.deepAgingId")
     )  # 원육이면 null, 가공육이면 해당 딥에이징 정보 ID
 
-    # 3. 관능검사 데이터
+    # 3. 관능검사 데이터 -> AI 팀 반환
     marbling = rds_db.Column(rds_db.Float)
     color = rds_db.Column(rds_db.Float)
     texture = rds_db.Column(rds_db.Float)
@@ -517,6 +519,52 @@ def create_SensoryEval(db, meat_data: dict, seqno: int, id: str, deepAgingId: in
             pass
         elif field == "deepAgingId":
             pass
+
+        else:
+            item_encoder(meat_data, field)
+    # Create a new Meat object
+    try:
+        new_SensoryEval = SensoryEval(**meat_data)
+        print(to_dict(new_SensoryEval))
+    except Exception as e:
+        raise Exception("Wrong sensory eval DB field items" + str(e))
+    return new_SensoryEval
+
+
+def create_AI_SensoryEval(db, meat_data: dict, seqno: int, id: str, deepAgingId: int):
+    """
+    db: SQLAlchemy db
+    freshmeat_data: 모든 필드의 데이터가 문자열로 들어왔다고 가정!!
+    seqno: 신선육 관능검사 seqno
+    freshmeatId: 가열육 관능검사 seqno
+    probexpt_seqno: 실험(전자혀) 관능 검사 seqno
+    type: 0(신규 생성) or 1(기존 수정)
+    """
+    if meat_data is None:
+        raise Exception("Invalid AI_Sensory_Evaluate data")
+    # 2. Get the ID of the record in the GradeNum table
+    xai_grade_num = (
+        db.session.query(GradeNum)
+        .filter_by(value=meat_data.get("xai_gradeNum"))
+        .first()
+    )
+    # 1. freshmeat_data에 없는 필드 추가
+    item_encoder(meat_data, "seqno", seqno)
+    item_encoder(meat_data, "id", id)
+    item_encoder(meat_data, "deepAgingId", deepAgingId)
+    # 2. freshmeat_data에 있는 필드 수정
+    for field in meat_data.keys():
+        if field == "seqno":  # 여기 있어도 걍 입력된걸 써라~
+            pass
+        elif field == "id":  # 여기 있어도 걍 입력된걸 써라~
+            pass
+        elif field == "deepAgingId":
+            pass
+        elif field == "xai_gradeNum":
+            try:
+                item_encoder(meat_data, field, xai_grade_num.id)
+            except Exception as e:
+                raise Exception("Invalid xai_grade_num id")
         else:
             item_encoder(meat_data, field)
     # Create a new Meat object
