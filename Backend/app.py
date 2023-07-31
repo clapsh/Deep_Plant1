@@ -27,6 +27,7 @@ from werkzeug.utils import secure_filename  # For checking file name from react 
 from datetime import datetime
 from utils import *
 from flask_cors import CORS
+import requests
 
 """
 flask run --host=0.0.0.0 --port=8080
@@ -59,6 +60,14 @@ class MyFlaskApp:
         @self.app.route("/data", methods=["GET"])
         def get_db_data():
             return _make_response(jsonify(get_db_data_()), "http://localhost:3000")
+
+        @self.app.route("/predict", methods=["POST"])
+        def predict_db_data():
+            id = request.args.get("id")
+            seqno = request.args.get("seqno")
+            return _make_response(
+                jsonify(self._predict_db_data(id, seqno)), "http://localhost:3000"
+            )
 
         @self.app.route("/meat/get", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
@@ -1312,6 +1321,54 @@ class MyFlaskApp:
                 }
 
         return jsonify(stats)
+
+    def _predict_db_data_(self, id, seqno):
+        # 1. Data Valid Check
+        if not request.json:
+            abort(400, description="No data sent for update")
+        # 2. 기본 데이터 받아두기
+        data = request.get_json()
+
+        # Find SensoryEval data
+        sensory_eval = SensoryEval.query.filter_by(id=id, seqno=seqno).first()
+
+        # If no SensoryEval found, abort
+        if not sensory_eval:
+            abort(404, description="No SensoryEval found with given id and seqno")
+
+        # Call 2nd team's API
+        response = requests.get(
+            "http://3.36.105.46:5000/predict",
+            params={"imagePath": sensory_eval.imagePath},
+            timeout=10,
+        )
+
+        # If the response was unsuccessful, abort
+        if response.status_code != 200:
+            abort(500, description="Failed to get data from team 2's API")
+
+        # Decode the response data
+        response_data = response.json()
+
+        # Merge the response data with the existing data
+        data.update(response_data)
+        try:
+            # Create a new SensoryEval
+            new_sensory_eval = create_AI_SensoryEval(rds_db, data, seqno, id)
+
+            # Add new_sensory_eval to the session
+            rds_db.session.add(new_sensory_eval)
+
+            # Commit the session to save the changes
+            rds_db.session.commit()
+        except Exception as e:
+            rds_db.session.rollback()
+            abort(404, description=e)
+
+        # Return the new data
+        return jsonify(data), 200
+        # 의문점1 : 이거 시간 오바 안 뜨려나?
+        # 의문점2 : 로딩창 안 뜨나
 
     # 3. Utils
 
