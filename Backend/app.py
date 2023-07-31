@@ -155,6 +155,11 @@ class MyFlaskApp:
                         self._get_senseval_of_processed_heatedmeat(seqno),
                         "http://localhost:3000",
                     )
+                elif statisticType == 10:  # 8. 가열한 처리육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
+                    return _make_response(
+                        self._get_tongue_of_processedmeat(),
+                        "http://localhost:3000",
+                    )
 
                 else:
                     return _make_response(
@@ -1322,6 +1327,56 @@ class MyFlaskApp:
 
         return jsonify(stats)
 
+    def _get_tongue_of_processedmeat(self):
+        # Get all SensoryEval records
+        sensory_evals = SensoryEval.query.order_by(SensoryEval.id, SensoryEval.seqno).all()
+
+        result = {}
+
+        # Keep track of the accumulated minutes for each id
+        accumulated_minutes = {}
+
+        for sensory_eval in sensory_evals:
+            deep_aging = DeepAging.query.filter_by(deepAgingId=sensory_eval.deepAgingId).first()
+
+            # If no matching DeepAging record was found, skip this SensoryEval
+
+            # Get the corresponding ProbexptData record
+            probexpt_data = ProbexptData.query.filter_by(id=sensory_eval.id, seqno=sensory_eval.seqno).first()
+
+            # If no matching ProbexptData record was found, skip this SensoryEval
+            if not probexpt_data:
+                continue
+
+            # Create a dictionary of ProbexptData fields
+            probexpt_data_dict = {
+                "sourness": probexpt_data.sourness,
+                "bitterness": probexpt_data.bitterness,
+                "umami": probexpt_data.umami,
+                "richness": probexpt_data.richness,
+            }
+
+            # If the seqno is 0, set the minute to 0, otherwise, add the current DeepAging minute to the accumulated minutes
+            if sensory_eval.seqno == 0:
+                accumulated_minutes[sensory_eval.id] = 0
+            else:
+                # If the id is not yet in the accumulated_minutes dictionary, initialize it to the current minute
+                if sensory_eval.id not in accumulated_minutes:
+                    accumulated_minutes[sensory_eval.id] = deep_aging.minute
+                else:
+                    accumulated_minutes[sensory_eval.id] += deep_aging.minute
+
+            # Add the ProbexptData fields to the result under the accumulated minutes
+            if accumulated_minutes[sensory_eval.id] not in result:
+                result[accumulated_minutes[sensory_eval.id]] = {}
+
+            result[accumulated_minutes[sensory_eval.id]][
+                f"({sensory_eval.id},{sensory_eval.seqno})"
+            ] = probexpt_data_dict
+
+        return result
+
+    # 3. AI API
     def _predict_db_data_(self, id, seqno):
         # 1. Data Valid Check
         if not request.json:
@@ -1370,7 +1425,7 @@ class MyFlaskApp:
         # 의문점1 : 이거 시간 오바 안 뜨려나?
         # 의문점2 : 로딩창 안 뜨나
 
-    # 3. Utils
+    # 4. Utils
 
     def transfer_folder_image(self, id, new_meat, folder):
         """
