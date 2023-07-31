@@ -623,7 +623,7 @@ class MyFlaskApp:
                 new_HeatedmeatSensoryEval = create_HeatedmeatSensoryEval(
                     rds_db, data, seqno, id
                 )
-                rds_db.session.add(new_HeatedmeatSensoryEval)
+                rds_db.session.merge(new_HeatedmeatSensoryEval)
                 rds_db.session.commit()
             except Exception as e:
                 rds_db.session.rollback()
