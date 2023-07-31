@@ -330,10 +330,7 @@ class MyFlaskApp:
         count = int(count)
         start = convert2datetime(start, 1)
         end = convert2datetime(end, 1)
-        query = (
-            Meat.query.options()
-            .order_by(Meat.createdAt.desc())
-        )
+        query = Meat.query.options().order_by(Meat.createdAt.desc())
         if start is not None and end is not None:
             query = query.filter(Meat.createdAt.between(start, end))
         query = query.offset(offset * count).limit(count)
@@ -407,7 +404,7 @@ class MyFlaskApp:
         # Date Filter
         if start is not None and end is not None:
             query = query.filter(Meat.createdAt.between(start, end))
-        
+
         query = query.offset(offset * count).limit(count)
 
         result = []
@@ -437,7 +434,9 @@ class MyFlaskApp:
         return (
             jsonify(
                 {
-                    "DB Total len": Meat.query.filter_by(statusType=varified_id).count(),
+                    "DB Total len": Meat.query.filter_by(
+                        statusType=varified_id
+                    ).count(),
                     f"{varified}": result,
                 }
             ),
@@ -766,10 +765,10 @@ class MyFlaskApp:
                 rds_db.session.delete(meat)
                 self.s3_conn.delete_image("qr_codes", f"{id}")
                 rds_db.session.commit()
-                return id
+                return jsonify({"delete Id": id})
             except Exception as e:
                 rds_db.session.rollback()
-                return str(e)
+                return e
 
     def _delete_specific_seqno_meat_data(self, id, seqno):
         with self.app.app_context():
@@ -800,10 +799,10 @@ class MyFlaskApp:
                     self.s3_conn.delete_image("sensory_evals", f"{id}-{seqno}")
                     rds_db.session.commit()
 
-                return id
+                return jsonify({"delete Id": id, "delete Seqno": seqno})
             except Exception as e:
                 rds_db.session.rollback()
-                return str(e)
+                return e
 
     def _delete_range_meat_data(self):
         # 1. Data Valid Check
@@ -816,11 +815,11 @@ class MyFlaskApp:
         delete_failed = []
         try:
             for data in delete_list:
-                result = self._delete_specific_meat_data(data)
-                if isinstance(
-                    result, int
+                result = self._delete_specific_meat_data(data).get_json()
+                if not isinstance(
+                    result, str
                 ):  # if the deletion was successful, result would be the id
-                    delete_success.append(result)
+                    delete_success.append(result.get("delete Id"))
                 else:  # if the deletion failed, result would be an error message
                     delete_failed.append({"id": id, "reason": result})
             return (
