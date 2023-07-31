@@ -1112,7 +1112,7 @@ class MyFlaskApp:
                 "avg": avg,
                 "max": max_value,
                 "min": min_value,
-                "unique_values": unique_values,
+                "unique_values": sorted(unique_values),
             }
 
         return jsonify(stats)
@@ -1151,7 +1151,7 @@ class MyFlaskApp:
                     "avg": avg,
                     "max": max_value,
                     "min": min_value,
-                    "unique_values": unique_values,
+                    "unique_values": sorted(unique_values),
                 }
         else:
             # 각 필드의 평균값, 최대값, 최소값 계산
@@ -1184,7 +1184,7 @@ class MyFlaskApp:
                     "avg": avg,
                     "max": max_value,
                     "min": min_value,
-                    "unique_values": unique_values,
+                    "unique_values": sorted(unique_values),
                 }
 
         return jsonify(stats)
@@ -1221,7 +1221,7 @@ class MyFlaskApp:
                 "avg": avg,
                 "max": max_value,
                 "min": min_value,
-                "unique_values": unique_values,
+                "unique_values": sorted(unique_values),
             }
 
         return jsonify(stats)
@@ -1266,7 +1266,7 @@ class MyFlaskApp:
                     "avg": avg,
                     "max": max_value,
                     "min": min_value,
-                    "unique_values": unique_values,
+                    "unique_values": sorted(unique_values),
                 }
         else:
             for field in ["flavor", "juiciness", "tenderness", "umami", "palability"]:
@@ -1304,7 +1304,7 @@ class MyFlaskApp:
                     "avg": avg,
                     "max": max_value,
                     "min": min_value,
-                    "unique_values": unique_values,
+                    "unique_values": sorted(unique_values),
                 }
 
         return jsonify(stats)
