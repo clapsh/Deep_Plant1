@@ -652,6 +652,7 @@ def create_user(db, user_data: dict, type):
 
 
 def get_meat(db, id):
+    # 1. 육류데이터 가져오기
     meat = db.session.query(Meat).filter(Meat.id == id).first()
 
     if meat is None:
@@ -769,6 +770,7 @@ def get_HeatedmeatSensoryEval(db, id, seqno):
         heated_meat_history["createdAt"] = convert2string(
             heated_meat_history["createdAt"], 1
         )
+        del heated_meat_history["imagePath"]
         return heated_meat_history
     else:
         return None

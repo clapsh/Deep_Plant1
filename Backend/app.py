@@ -36,8 +36,8 @@ UPDATE_IMAGE_FOLDER_PATH = "./update_images/"
 
 
 class MyFlaskApp:
-    def __init__(self, config):
-        self.app = Flask(__name__)
+    def __init__(self, app, config):
+        self.app = app
         # 1. RDS Config
         self.config = config
         self.app.config["SQLALCHEMY_DATABASE_URI"] = self._create_sqlalchemy_uri()
@@ -280,7 +280,37 @@ class MyFlaskApp:
     def _get_specific_meat_data(self, id):
         result = get_meat(rds_db, id)
         if result:
-            return jsonify(get_meat(rds_db, id))
+            try:
+                result["rawmeat_data_complete"] = (
+                    all(
+                        v is not None
+                        for v in result["rawmeat"]["heatedmeat_sensory_eval"].values()
+                    )
+                    and all(
+                        v is not None
+                        for v in result["rawmeat"]["probexpt_data"].values()
+                    )
+                    and all(
+                        v is not None
+                        for v in result["rawmeat"]["sensory_eval"].values()
+                    )
+                )
+            except:
+                result["rawmeat_data_complete"] = False
+
+            result["processedmeat_data_complete"] = {}
+            for k, v in result["processedmeat"].items():
+                try:
+                    result["processedmeat_data_complete"][k] = all(
+                        all(vv is not None for vv in inner_v.values())
+                        for inner_v in v.values()
+                    )
+                except:
+                    result["processedmeat_data_complete"][k] = False
+            if not result["processedmeat_data_complete"]:
+                result["processedmeat_data_complete"] = False
+
+            return jsonify(result)
         else:
             return abort(404, description=f"No Meat data found for {id}")
 
@@ -593,13 +623,7 @@ class MyFlaskApp:
                 new_HeatedmeatSensoryEval = create_HeatedmeatSensoryEval(
                     rds_db, data, seqno, id
                 )
-                rds_db.session.merge(new_HeatedmeatSensoryEval)
-
-                self.transfer_folder_image(
-                    f"{id}-{seqno}",
-                    new_HeatedmeatSensoryEval,
-                    "heatedmeat_sensory_evals",
-                )
+                rds_db.session.add(new_HeatedmeatSensoryEval)
                 rds_db.session.commit()
             except Exception as e:
                 rds_db.session.rollback()
@@ -1316,9 +1340,6 @@ class MyFlaskApp:
         aws_db = self.config["aws_db"]
         return f"postgresql://{aws_db['user']}:{aws_db['password']}@{aws_db['host']}:{aws_db['port']}/{aws_db['database']}"
 
-    def run(self, host="0.0.0.0", port=8080):  # server 구동
-        self.app.run(host=host, port=port)
-
 
 def _make_response(data, url):  # For making response
     response = make_response(data)
@@ -1327,7 +1348,8 @@ def _make_response(data, url):  # For making response
 
 
 # Init RDS
-myApp = MyFlaskApp(db_config.config)
+app = Flask(__name__)
+myApp = MyFlaskApp(app, db_config.config)
 CORS(myApp.app)
 
 # 1. Login/Register Routing
@@ -1424,7 +1446,6 @@ def login():
     rds_db.session.commit()
     user_info = to_dict(user)
     user_info["type"] = UserType.query.filter_by(id=user_info["type"]).first().name
-
     return jsonify(user_info), 200
 
 
@@ -1463,4 +1484,4 @@ def scheduler_function():  # 일정 주기마다 실행하는 함수
 # Server 구동
 if __name__ == "__main__":
     # 2. Flask 서버 실행
-    myApp.run()
+    myApp.app.run(host="0.0.0.0", port=8080)
