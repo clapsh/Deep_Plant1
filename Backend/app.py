@@ -1329,7 +1329,9 @@ class MyFlaskApp:
 
     def _get_tongue_of_processedmeat(self):
         # Get all SensoryEval records
-        sensory_evals = SensoryEval.query.order_by(SensoryEval.id, SensoryEval.seqno).all()
+        sensory_evals = SensoryEval.query.order_by(
+            SensoryEval.id, SensoryEval.seqno
+        ).all()
 
         result = {}
 
@@ -1337,12 +1339,16 @@ class MyFlaskApp:
         accumulated_minutes = {}
 
         for sensory_eval in sensory_evals:
-            deep_aging = DeepAging.query.filter_by(deepAgingId=sensory_eval.deepAgingId).first()
+            deep_aging = DeepAging.query.filter_by(
+                deepAgingId=sensory_eval.deepAgingId
+            ).first()
 
             # If no matching DeepAging record was found, skip this SensoryEval
 
             # Get the corresponding ProbexptData record
-            probexpt_data = ProbexptData.query.filter_by(id=sensory_eval.id, seqno=sensory_eval.seqno).first()
+            probexpt_data = ProbexptData.query.filter_by(
+                id=sensory_eval.id, seqno=sensory_eval.seqno
+            ).first()
 
             # If no matching ProbexptData record was found, skip this SensoryEval
             if not probexpt_data:
@@ -1584,10 +1590,19 @@ def delete():
         return jsonify({f"error": str(e)}), 500
 
 
-@myApp.app.route("/user/logout", methods=["GET"])
-def logout():
-    id = request.args.get("id")
-    return id, 200
+@myApp.app.route("/user/pwd_check", methods=["POST"])
+def pwd_check():
+    data = request.get_json()
+    id = data.get("id")
+    password = data.get("password")
+
+    user = User.query.filter_by(userId=id).first()
+    if user is None:
+        return jsonify({"message": f"No user data in Database(userId:{id})"}), 404
+    if user.password!=hashlib.sha256(password.encode()).hexdigest():
+        return jsonify({"message": f"Invalid password for userId:{id}"}), 401
+
+    return jsonify({"message": f"Valid password for userId:{id}"}), 200
 
 
 def scheduler_function():  # 일정 주기마다 실행하는 함수

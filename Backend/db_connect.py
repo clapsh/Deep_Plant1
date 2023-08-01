@@ -634,6 +634,8 @@ def create_ProbexptData(db, meat_data: dict, seqno: int, id: str):
             pass
         elif field == "id":
             pass
+        elif field == "updatedAt":
+            item_encoder(meat_data, field, datetime.now())
         else:
             item_encoder(meat_data, field)
     # Create a new Meat object
@@ -685,6 +687,8 @@ def create_user(db, user_data: dict, type):
                     item_encoder(user_data, field, user_type.id)
                 else:
                     item_encoder(user_data, field, 3)
+            elif field == "updatedAt":
+                item_encoder(user_data, field, datetime.now())
             else:
                 item_encoder(user_data, field)
 
