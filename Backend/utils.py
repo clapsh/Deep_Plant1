@@ -111,7 +111,7 @@ pigSmall = {
     ],
 }
 usrType = {0: "Normal", 1: "Researcher", 2: "Manager", 3: None}
-sexType = {0: "수", 1: "암", 2: "거세", 3: None }
+sexType = {0: "수", 1: "암", 2: "거세", 3: None}
 gradeNum = {0: "1++", 1: "1+", 2: "1", 3: "2", 4: "3", 5: None}
 statusType = {0: "대기중", 1: "반려", 2: "승인"}
 CATTLE = 0
@@ -133,7 +133,10 @@ def safe_str(val):
     safe STR 반환
     """
     try:
-        return str(val)
+        if val is not None:
+            return str(val)
+        else:
+            return None
     except Exception:
         return None
 
@@ -206,7 +209,7 @@ def item_encoder(data_dict, item, input_data=None):
         "jobTitle",
         "homeAddr",
         "imagePath",
-        "xai_imagePath"
+        "xai_imagePath",
     ]
     int_cvr = ["period", "minute", "seqno"]
     float_cvr = [

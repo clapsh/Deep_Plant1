@@ -77,6 +77,13 @@ class MyFlaskApp:
             part_id = request.args.get("part_id")
             start = request.args.get("start")
             end = request.args.get("end")
+            # filter
+            farmAddr = safe_bool(request.args.get("farmAddr"))
+            userId = safe_bool(request.args.get("userId"))
+            type = safe_bool(request.args.get("type"))
+            createdAt = safe_bool(request.args.get("createdAt"))
+            statusType = safe_bool(request.args.get("statusType"))
+            company = safe_bool(request.args.get("company"))
             if id:
                 return _make_response(
                     self._get_specific_meat_data(id), "http://localhost:3000"
@@ -87,7 +94,18 @@ class MyFlaskApp:
                 )
             elif offset and count:
                 return _make_response(
-                    self._get_range_meat_data(offset, count, start, end),
+                    self._get_range_meat_data(
+                        offset,
+                        count,
+                        start,
+                        end,
+                        farmAddr,
+                        userId,
+                        type,
+                        createdAt,
+                        statusType,
+                        company,
+                    ),
                     "http://localhost:3000",
                 )
 
@@ -99,6 +117,8 @@ class MyFlaskApp:
             id = request.args.get("id")
             statisticType = safe_int(request.args.get("type"))
             seqno = request.args.get("seqno")
+            start = safe_str(request.args.get("start"))
+            end = safe_str(request.args.get("end"))
             if id:  # 1. 특정 육류 정보에 대한 통계
                 return _make_response(
                     abort(404, description="Wrong data in type params"),
@@ -107,57 +127,57 @@ class MyFlaskApp:
             else:  # 2. 전체에 대한 통계
                 if statisticType == 0:  # 1. 신선육, 숙성육 비율(소,돼지,전체)
                     return _make_response(
-                        self._get_num_of_processed_raw(),
+                        self._get_num_of_processed_raw(start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 1:  # 2. 소, 돼지 개수
                     return _make_response(
-                        self._get_num_of_cattle_pig(),
+                        self._get_num_of_cattle_pig(start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 2:  # 3. 대분류 부위 별 개수(소, 돼지)
                     return _make_response(
-                        self._get_num_of_primal_part(),
+                        self._get_num_of_primal_part(start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 3:  # 4. 농장 지역 별 개수(소,돼지)
                     return _make_response(
-                        self._get_num_by_farmAddr(),
+                        self._get_num_by_farmAddr(start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 4:  # 5. 신선육 맛데이터 항목 별 평균, 최대, 최소치
                     return _make_response(
-                        self._get_probexpt_of_rawmeat(),
+                        self._get_probexpt_of_rawmeat(start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 5:  # 6. 처리육 맛데이터 항목 별 평균, 최대, 최소치
                     return _make_response(
-                        self._get_probexpt_of_processedmeat(seqno),
+                        self._get_probexpt_of_processedmeat(seqno, start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 6:  # 6. 신선육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
                     return _make_response(
-                        self._get_senseval_of_rawmeat(),
+                        self._get_senseval_of_rawmeat(start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 7:  # 6. 처리육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
                     return _make_response(
-                        self._get_senseval_of_processedmeat(seqno),
+                        self._get_senseval_of_processedmeat(seqno, start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 8:  # 7. 가열한 원육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
                     return _make_response(
-                        self._get_senseval_of_raw_heatedmeat(),
+                        self._get_senseval_of_raw_heatedmeat(start, end),
                         "http://localhost:3000",
                     )
                 elif statisticType == 9:  # 8. 가열한 처리육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
                     return _make_response(
-                        self._get_senseval_of_processed_heatedmeat(seqno),
+                        self._get_senseval_of_processed_heatedmeat(seqno, start, end),
                         "http://localhost:3000",
                     )
-                elif statisticType == 10:  # 8. 가열한 처리육에 따라 관능 데이터 각 항목 별 평균, 최대, 최소치
+                elif statisticType == 10:  # 8. 가열한 처리육에 따라 맛 데이터 각 항목 별 평균, 최대, 최소치
                     return _make_response(
-                        self._get_tongue_of_processedmeat(),
+                        self._get_tongue_of_processedmeat(start, end),
                         "http://localhost:3000",
                     )
 
@@ -339,16 +359,64 @@ class MyFlaskApp:
         part_id_meat_list = [meat for meat in meat_list if part_id in meat]
         return jsonify({part_id: part_id_meat_list})
 
-    def _get_range_meat_data(self, offset, count, start=None, end=None):
+    def _get_range_meat_data(
+        self,
+        offset,
+        count,
+        start=None,
+        end=None,
+        farmAddr=None,
+        userId=None,
+        type=None,
+        createdAt=None,
+        statusType=None,
+        company=None,
+    ):
         offset = int(offset)
         count = int(count)
         start = convert2datetime(start, 1)
         end = convert2datetime(end, 1)
-        query = Meat.query.options().order_by(Meat.createdAt.desc())
+        # Base Query
+        query = Meat.query.join(User, User.userId == Meat.userId)  # Join with User
+
+        # Sorting and Filtering
+        if farmAddr is not None:
+            if farmAddr:  # true: 가나다순 정렬
+                query = query.order_by(Meat.farmAddr.asc())
+            else:  # false: 역순
+                query = query.order_by(Meat.farmAddr.desc())
+        if userId is not None:
+            if userId:  # true: 알파벳 오름차순 정렬
+                query = query.order_by(Meat.userId.asc())
+            else:  # false: 알파벳 내림차순 정렬
+                query = query.order_by(Meat.userId.desc())
+        if type is not None:
+            if type:  # true: 숫자 오름차순 정렬
+                query = query.order_by(User.type.asc())
+            else:  # false: 숫자 내림차순 정렬
+                query = query.order_by(User.type.desc())
+        if company is not None:
+            if company:  # true: 가나다순 정렬
+                query = query.order_by(User.company.asc())
+            else:  # false: 역순
+                query = query.order_by(User.company.desc())
+        if createdAt is not None:
+            if createdAt:  # true: 최신순
+                query = query.order_by(Meat.createdAt.desc())
+            else:  # false: 역순
+                query = query.order_by(Meat.createdAt.asc())
+        if statusType is not None:
+            if statusType:  # true: 숫자 오름차순 정렬
+                query = query.order_by(Meat.statusType.asc())
+            else:  # false: 숫자 내림차순 정렬
+                query = query.order_by(Meat.statusType.desc())
+
+        # 기간 설정 쿼리
         if start is not None and end is not None:
             query = query.filter(Meat.createdAt.between(start, end))
         query = query.offset(offset * count).limit(count)
 
+        # 탐색
         meat_data = query.all()
         meat_result = {}
         id_result = [data.id for data in meat_data]
@@ -368,7 +436,7 @@ class MyFlaskApp:
 
         result = {
             "DB Total len": Meat.query.count(),
-            "meat_id_list": id_result,
+            "id_list": id_result,
             "meat_dict": meat_result,
         }
 
@@ -846,7 +914,13 @@ class MyFlaskApp:
             abort(404, description=3)
 
     # 2. Statistic API
-    def _get_num_of_processed_raw(self):
+    def _get_num_of_processed_raw(self, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
+
         # Subquery to find meats which have processed data
         processed_meats_subquery = (
             rds_db.session.query(Meat.id)
@@ -855,37 +929,64 @@ class MyFlaskApp:
             .subquery()
         )
         processed_meats_select = processed_meats_subquery.select()
+
         # 1. Category.specieId가 0이면서 SensoryEval.seqno 값이 0인 데이터, 1인 데이터
         fresh_cattle_count = (
             Meat.query.join(Category)
-            .filter(Category.speciesId == 0, ~Meat.id.in_(processed_meats_select))
+            .filter(
+                Category.speciesId == 0,
+                ~Meat.id.in_(processed_meats_select),
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
             .count()
         )
         processed_cattle_count = (
             Meat.query.join(Category)
-            .filter(Category.speciesId == 0, Meat.id.in_(processed_meats_select))
+            .filter(
+                Category.speciesId == 0,
+                Meat.id.in_(processed_meats_select),
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
             .count()
         )
 
         # 2. Category.specieId가 1이면서 SensoryEval.seqno 값이 0인 데이터, 1인 데이터
         fresh_pig_count = (
             Meat.query.join(Category)
-            .filter(Category.speciesId == 1, ~Meat.id.in_(processed_meats_select))
+            .filter(
+                Category.speciesId == 1,
+                ~Meat.id.in_(processed_meats_select),
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
             .count()
         )
         processed_pig_count = (
             Meat.query.join(Category)
-            .filter(Category.speciesId == 1, Meat.id.in_(processed_meats_select))
+            .filter(
+                Category.speciesId == 1,
+                Meat.id.in_(processed_meats_select),
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
             .count()
         )
 
         # 3. 전체 데이터에서 SensoryEval.seqno 값이 0인 데이터, 1인 데이터
         fresh_meat_count = Meat.query.filter(
-            ~Meat.id.in_(processed_meats_select)
+            ~Meat.id.in_(processed_meats_select),
+            Meat.createdAt.between(start, end),
+            Meat.statusType == 2,
         ).count()
+
         processed_meat_count = Meat.query.filter(
-            Meat.id.in_(processed_meats_select)
+            Meat.id.in_(processed_meats_select),
+            Meat.createdAt.between(start, end),
+            Meat.statusType == 2,
         ).count()
+
         # Returning the counts in JSON format
         return (
             jsonify(
@@ -907,17 +1008,48 @@ class MyFlaskApp:
             200,
         )
 
-    def _get_num_of_cattle_pig(self):
-        cow_count = Meat.query.join(Category).filter(Category.speciesId == 0).count()
-        pig_count = Meat.query.join(Category).filter(Category.speciesId == 1).count()
+    def _get_num_of_cattle_pig(self, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
+
+        cow_count = (
+            Meat.query.join(Category)
+            .filter(
+                Category.speciesId == 0,
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
+            .count()
+        )
+        pig_count = (
+            Meat.query.join(Category)
+            .filter(
+                Category.speciesId == 1,
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
+            .count()
+        )
         return jsonify({"cattle_count": cow_count, "pig_count": pig_count}), 200
 
-    def _get_num_of_primal_part(self):
+    def _get_num_of_primal_part(self, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
         # 1. Category.specieId가 0일때 해당 Category.primalValue 별로 육류의 개수를 추출
         count_by_primal_value_beef = (
             rds_db.session.query(Category.primalValue, func.count(Meat.id))
             .join(Meat, Meat.categoryId == Category.id)
-            .filter(Category.speciesId == 0)
+            .filter(
+                Category.speciesId == 0,
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
             .group_by(Category.primalValue)
             .all()
         )
@@ -926,7 +1058,11 @@ class MyFlaskApp:
         count_by_primal_value_pork = (
             rds_db.session.query(Category.primalValue, func.count(Meat.id))
             .join(Meat, Meat.categoryId == Category.id)
-            .filter(Category.speciesId == 1)
+            .filter(
+                Category.speciesId == 1,
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
             .group_by(Category.primalValue)
             .all()
         )
@@ -942,7 +1078,12 @@ class MyFlaskApp:
             200,
         )
 
-    def _get_num_by_farmAddr(self):
+    def _get_num_by_farmAddr(self, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
         regions = [
             "강원",
             "경기",
@@ -972,6 +1113,8 @@ class MyFlaskApp:
                     .filter(
                         Category.speciesId == speciesId,
                         Meat.farmAddr.like(f"%{region}%"),
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
                     )
                     .count()
                 )
@@ -984,36 +1127,65 @@ class MyFlaskApp:
         # For total data
         total_region_counts = {}
         for region in regions:
-            count = Meat.query.filter(Meat.farmAddr.like(f"%{region}%")).count()
+            count = Meat.query.filter(
+                Meat.farmAddr.like(f"%{region}%"),
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            ).count()
             total_region_counts[region] = count
         result["total_counts_by_region"] = total_region_counts
 
         return jsonify(result), 200
 
-    def _get_probexpt_of_rawmeat(self):
+    def _get_probexpt_of_rawmeat(self, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
         # 각 필드의 평균값, 최대값, 최소값 계산
         stats = {}
         for field in ["sourness", "bitterness", "umami", "richness"]:
             avg = (
                 rds_db.session.query(func.avg(getattr(ProbexptData, field)))
-                .filter(ProbexptData.seqno == 0)
+                .join(Meat, Meat.id == ProbexptData.id)
+                .filter(
+                    ProbexptData.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
             max_value = (
                 rds_db.session.query(func.max(getattr(ProbexptData, field)))
-                .filter(ProbexptData.seqno == 0)
+                .join(Meat, Meat.id == ProbexptData.id)
+                .filter(
+                    ProbexptData.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
             min_value = (
                 rds_db.session.query(func.min(getattr(ProbexptData, field)))
-                .filter(ProbexptData.seqno == 0)
+                .join(Meat, Meat.id == ProbexptData.id)
+                .filter(
+                    ProbexptData.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
 
             # 실제로 존재하는 값들 찾기
             unique_values_query = (
                 rds_db.session.query(getattr(ProbexptData, field))
-                .filter(ProbexptData.seqno == 0)
+                .join(Meat, Meat.id == ProbexptData.id)
+                .filter(
+                    ProbexptData.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .distinct()
             )
             unique_values = [value[0] for value in unique_values_query.all()]
@@ -1027,7 +1199,13 @@ class MyFlaskApp:
 
         return jsonify(stats)
 
-    def _get_probexpt_of_processedmeat(self, seqno):
+    def _get_probexpt_of_processedmeat(self, seqno, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
+
         # 각 필드의 평균값, 최대값, 최소값 계산
         stats = {}
         seqno = safe_int(seqno)
@@ -1035,24 +1213,44 @@ class MyFlaskApp:
             for field in ["sourness", "bitterness", "umami", "richness"]:
                 avg = (
                     rds_db.session.query(func.avg(getattr(ProbexptData, field)))
-                    .filter(ProbexptData.seqno == seqno)
+                    .join(Meat, Meat.id == ProbexptData.id)
+                    .filter(
+                        ProbexptData.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 max_value = (
                     rds_db.session.query(func.max(getattr(ProbexptData, field)))
-                    .filter(ProbexptData.seqno == seqno)
+                    .join(Meat, Meat.id == ProbexptData.id)
+                    .filter(
+                        ProbexptData.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 min_value = (
                     rds_db.session.query(func.min(getattr(ProbexptData, field)))
-                    .filter(ProbexptData.seqno == seqno)
+                    .join(Meat, Meat.id == ProbexptData.id)
+                    .filter(
+                        ProbexptData.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
 
                 # 실제로 존재하는 값들 찾기
                 unique_values_query = (
                     rds_db.session.query(getattr(ProbexptData, field))
-                    .filter(ProbexptData.seqno == seqno)
+                    .join(Meat, Meat.id == ProbexptData.id)
+                    .filter(
+                        ProbexptData.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .distinct()
                 )
                 unique_values = [value[0] for value in unique_values_query.all()]
@@ -1067,24 +1265,44 @@ class MyFlaskApp:
             for field in ["sourness", "bitterness", "umami", "richness"]:
                 avg = (
                     rds_db.session.query(func.avg(getattr(ProbexptData, field)))
-                    .filter(ProbexptData.seqno != 0)
+                    .join(Meat, Meat.id == ProbexptData.id)
+                    .filter(
+                        ProbexptData.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 max_value = (
                     rds_db.session.query(func.max(getattr(ProbexptData, field)))
-                    .filter(ProbexptData.seqno != 0)
+                    .join(Meat, Meat.id == ProbexptData.id)
+                    .filter(
+                        ProbexptData.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 min_value = (
                     rds_db.session.query(func.min(getattr(ProbexptData, field)))
-                    .filter(ProbexptData.seqno != 0)
+                    .join(Meat, Meat.id == ProbexptData.id)
+                    .filter(
+                        ProbexptData.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
 
                 # 실제로 존재하는 값들 찾기
                 unique_values_query = (
                     rds_db.session.query(getattr(ProbexptData, field))
-                    .filter(ProbexptData.seqno != 0)
+                    .join(Meat, Meat.id == ProbexptData.id)
+                    .filter(
+                        ProbexptData.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .distinct()
                 )
                 unique_values = [value[0] for value in unique_values_query.all()]
@@ -1098,30 +1316,56 @@ class MyFlaskApp:
 
         return jsonify(stats)
 
-    def _get_senseval_of_rawmeat(self):
+    def _get_senseval_of_rawmeat(self, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
+
         # 각 필드의 평균값, 최대값, 최소값 계산
         stats = {}
         for field in ["marbling", "color", "texture", "surfaceMoisture", "overall"]:
             avg = (
                 rds_db.session.query(func.avg(getattr(SensoryEval, field)))
-                .filter(SensoryEval.seqno == 0)
+                .join(Meat, Meat.id == SensoryEval.id)
+                .filter(
+                    SensoryEval.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
             max_value = (
                 rds_db.session.query(func.max(getattr(SensoryEval, field)))
-                .filter(SensoryEval.seqno == 0)
+                .join(Meat, Meat.id == SensoryEval.id)
+                .filter(
+                    SensoryEval.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
             min_value = (
                 rds_db.session.query(func.min(getattr(SensoryEval, field)))
-                .filter(SensoryEval.seqno == 0)
+                .join(Meat, Meat.id == SensoryEval.id)
+                .filter(
+                    SensoryEval.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
 
             # 실제로 존재하는 값들 찾기
             unique_values_query = (
                 rds_db.session.query(getattr(SensoryEval, field))
-                .filter(SensoryEval.seqno == 0)
+                .join(Meat, Meat.id == SensoryEval.id)
+                .filter(
+                    SensoryEval.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .distinct()
             )
             unique_values = [value[0] for value in unique_values_query.all()]
@@ -1135,7 +1379,13 @@ class MyFlaskApp:
 
         return jsonify(stats)
 
-    def _get_senseval_of_processedmeat(self, seqno):
+    def _get_senseval_of_processedmeat(self, seqno, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
+
         stats = {}
         seqno = safe_int(seqno)
         if seqno:
@@ -1143,60 +1393,110 @@ class MyFlaskApp:
             for field in ["marbling", "color", "texture", "surfaceMoisture", "overall"]:
                 avg = (
                     rds_db.session.query(func.avg(getattr(SensoryEval, field)))
-                    .filter(SensoryEval.seqno == seqno)
+                    .join(Meat, Meat.id == SensoryEval.id)
+                    .filter(
+                        SensoryEval.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 max_value = (
                     rds_db.session.query(func.max(getattr(SensoryEval, field)))
-                    .filter(SensoryEval.seqno == seqno)
+                    .join(Meat, Meat.id == SensoryEval.id)
+                    .filter(
+                        SensoryEval.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 min_value = (
                     rds_db.session.query(func.min(getattr(SensoryEval, field)))
-                    .filter(SensoryEval.seqno == seqno)
+                    .join(Meat, Meat.id == SensoryEval.id)
+                    .filter(
+                        SensoryEval.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
 
                 # 실제로 존재하는 값들 찾기
                 unique_values_query = (
                     rds_db.session.query(getattr(SensoryEval, field))
-                    .filter(SensoryEval.seqno == seqno)
+                    .join(Meat, Meat.id == SensoryEval.id)
+                    .filter(
+                        SensoryEval.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .distinct()
                 )
-                unique_values = [value[0] for value in unique_values_query.all()]
+                unique_values = [
+                    value[0]
+                    for value in unique_values_query.all()
+                    if value[0] is not None
+                ]
 
                 stats[field] = {
                     "avg": avg,
                     "max": max_value,
                     "min": min_value,
-                    "unique_values": sorted(unique_values),
+                    "unique_values": sorted(unique_values)
+                    if unique_values
+                    else unique_values,
                 }
         else:
             # 각 필드의 평균값, 최대값, 최소값 계산
             for field in ["marbling", "color", "texture", "surfaceMoisture", "overall"]:
                 avg = (
                     rds_db.session.query(func.avg(getattr(SensoryEval, field)))
-                    .filter(SensoryEval.seqno != 0)
+                    .join(Meat, Meat.id == SensoryEval.id)
+                    .filter(
+                        SensoryEval.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 max_value = (
                     rds_db.session.query(func.max(getattr(SensoryEval, field)))
-                    .filter(SensoryEval.seqno != 0)
+                    .join(Meat, Meat.id == SensoryEval.id)
+                    .filter(
+                        SensoryEval.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 min_value = (
                     rds_db.session.query(func.min(getattr(SensoryEval, field)))
-                    .filter(SensoryEval.seqno != 0)
+                    .join(Meat, Meat.id == SensoryEval.id)
+                    .filter(
+                        SensoryEval.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
 
                 # 실제로 존재하는 값들 찾기
                 unique_values_query = (
                     rds_db.session.query(getattr(SensoryEval, field))
-                    .filter(SensoryEval.seqno != 0)
+                    .join(Meat, Meat.id == SensoryEval.id)
+                    .filter(
+                        SensoryEval.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .distinct()
                 )
-                unique_values = [value[0] for value in unique_values_query.all()]
+                unique_values = [
+                    value[0]
+                    for value in unique_values_query.all()
+                    if value[0] is not None
+                ]
 
                 stats[field] = {
                     "avg": avg,
@@ -1207,33 +1507,61 @@ class MyFlaskApp:
 
         return jsonify(stats)
 
-    def _get_senseval_of_raw_heatedmeat(self):
+    def _get_senseval_of_raw_heatedmeat(self, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
+
         # 각 필드의 평균값, 최대값, 최소값 계산
         stats = {}
         for field in ["flavor", "juiciness", "tenderness", "umami", "palability"]:
             avg = (
                 rds_db.session.query(func.avg(getattr(HeatedmeatSensoryEval, field)))
-                .filter(HeatedmeatSensoryEval.seqno == 0)
+                .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                .filter(
+                    HeatedmeatSensoryEval.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
             max_value = (
                 rds_db.session.query(func.max(getattr(HeatedmeatSensoryEval, field)))
-                .filter(HeatedmeatSensoryEval.seqno == 0)
+                .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                .filter(
+                    HeatedmeatSensoryEval.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
             min_value = (
                 rds_db.session.query(func.min(getattr(HeatedmeatSensoryEval, field)))
-                .filter(HeatedmeatSensoryEval.seqno == 0)
+                .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                .filter(
+                    HeatedmeatSensoryEval.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .scalar()
             )
 
             # 실제로 존재하는 값들 찾기
             unique_values_query = (
                 rds_db.session.query(getattr(HeatedmeatSensoryEval, field))
-                .filter(HeatedmeatSensoryEval.seqno == 0)
+                .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                .filter(
+                    HeatedmeatSensoryEval.seqno == 0,
+                    Meat.createdAt.between(start, end),
+                    Meat.statusType == 2,
+                )
                 .distinct()
             )
-            unique_values = [value[0] for value in unique_values_query.all()]
+            unique_values = [
+                value[0] for value in unique_values_query.all() if value[0] is not None
+            ]
 
             stats[field] = {
                 "avg": avg,
@@ -1244,7 +1572,13 @@ class MyFlaskApp:
 
         return jsonify(stats)
 
-    def _get_senseval_of_processed_heatedmeat(self, seqno):
+    def _get_senseval_of_processed_heatedmeat(self, seqno, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
+
         # 각 필드의 평균값, 최대값, 최소값 계산
         stats = {}
         seqno = safe_int(seqno)
@@ -1254,20 +1588,35 @@ class MyFlaskApp:
                     rds_db.session.query(
                         func.avg(getattr(HeatedmeatSensoryEval, field))
                     )
-                    .filter(HeatedmeatSensoryEval.seqno == seqno)
+                    .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                    .filter(
+                        HeatedmeatSensoryEval.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 max_value = (
                     rds_db.session.query(
                         func.max(getattr(HeatedmeatSensoryEval, field))
                     )
-                    .filter(HeatedmeatSensoryEval.seqno == seqno)
+                    .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                    .filter(
+                        HeatedmeatSensoryEval.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 min_value = (
                     rds_db.session.query(
-                        func.min(getattr(HeatedmeatSensoryEval, field))
+                        func.min(
+                            getattr(HeatedmeatSensoryEval, field),
+                            Meat.createdAt.between(start, end),
+                            Meat.statusType == 2,
+                        )
                     )
+                    .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
                     .filter(HeatedmeatSensoryEval.seqno == seqno)
                     .scalar()
                 )
@@ -1275,10 +1624,19 @@ class MyFlaskApp:
                 # 실제로 존재하는 값들 찾기
                 unique_values_query = (
                     rds_db.session.query(getattr(HeatedmeatSensoryEval, field))
-                    .filter(HeatedmeatSensoryEval.seqno == seqno)
+                    .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                    .filter(
+                        HeatedmeatSensoryEval.seqno == seqno,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .distinct()
                 )
-                unique_values = [value[0] for value in unique_values_query.all()]
+                unique_values = [
+                    value[0]
+                    for value in unique_values_query.all()
+                    if value[0] is not None
+                ]
 
                 stats[field] = {
                     "avg": avg,
@@ -1292,31 +1650,55 @@ class MyFlaskApp:
                     rds_db.session.query(
                         func.avg(getattr(HeatedmeatSensoryEval, field))
                     )
-                    .filter(HeatedmeatSensoryEval.seqno != 0)
+                    .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                    .filter(
+                        HeatedmeatSensoryEval.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 max_value = (
                     rds_db.session.query(
                         func.max(getattr(HeatedmeatSensoryEval, field))
                     )
-                    .filter(HeatedmeatSensoryEval.seqno != 0)
+                    .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                    .filter(
+                        HeatedmeatSensoryEval.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
                 min_value = (
                     rds_db.session.query(
                         func.min(getattr(HeatedmeatSensoryEval, field))
                     )
-                    .filter(HeatedmeatSensoryEval.seqno != 0)
+                    .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                    .filter(
+                        HeatedmeatSensoryEval.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .scalar()
                 )
 
                 # 실제로 존재하는 값들 찾기
                 unique_values_query = (
                     rds_db.session.query(getattr(HeatedmeatSensoryEval, field))
-                    .filter(HeatedmeatSensoryEval.seqno != 0)
+                    .join(Meat, Meat.id == HeatedmeatSensoryEval.id)
+                    .filter(
+                        HeatedmeatSensoryEval.seqno != 0,
+                        Meat.createdAt.between(start, end),
+                        Meat.statusType == 2,
+                    )
                     .distinct()
                 )
-                unique_values = [value[0] for value in unique_values_query.all()]
+                unique_values = [
+                    value[0]
+                    for value in unique_values_query.all()
+                    if value[0] is not None
+                ]
 
                 stats[field] = {
                     "avg": avg,
@@ -1327,11 +1709,23 @@ class MyFlaskApp:
 
         return jsonify(stats)
 
-    def _get_tongue_of_processedmeat(self):
+    def _get_tongue_of_processedmeat(self, start, end):
+        # 기간 설정
+        start = convert2datetime(start, 1)  # Start Time
+        end = convert2datetime(end, 1)  # End Time
+        if start is None or end is None:
+            abort(404, description="Wrong start or end data")
+
         # Get all SensoryEval records
-        sensory_evals = SensoryEval.query.order_by(
-            SensoryEval.id, SensoryEval.seqno
-        ).all()
+        sensory_evals = (
+            SensoryEval.query.join(Meat, Meat.id == SensoryEval.id)
+            .filter(
+                Meat.createdAt.between(start, end),
+                Meat.statusType == 2,
+            )
+            .order_by(SensoryEval.id, SensoryEval.seqno)
+            .all()
+        )
 
         result = {}
 
@@ -1599,7 +1993,8 @@ def pwd_check():
     user = User.query.filter_by(userId=id).first()
     if user is None:
         return jsonify({"message": f"No user data in Database(userId:{id})"}), 404
-    if user.password!=hashlib.sha256(password.encode()).hexdigest():
+    if user.password != hashlib.sha256(password.encode()).hexdigest():
+        print(user.password, hashlib.sha256(password.encode()).hexdigest())
         return jsonify({"message": f"Invalid password for userId:{id}"}), 401
 
     return jsonify({"message": f"Valid password for userId:{id}"}), 200
