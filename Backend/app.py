@@ -63,8 +63,8 @@ class MyFlaskApp:
 
         @self.app.route("/predict", methods=["POST"])
         def predict_db_data():
-            id = request.args.get("id")
-            seqno = request.args.get("seqno")
+            id = safe_str(request.args.get("id"))
+            seqno = safe_int(request.args.get("seqno"))
             return _make_response(
                 jsonify(self._predict_db_data(id, seqno)), "http://localhost:3000"
             )
@@ -1777,7 +1777,7 @@ class MyFlaskApp:
         return result
 
     # 3. AI API
-    def _predict_db_data_(self, id, seqno):
+    def _predict_db_data(self, id, seqno):
         # 1. Data Valid Check
         if not request.json:
             abort(400, description="No data sent for update")
@@ -1792,9 +1792,9 @@ class MyFlaskApp:
             abort(404, description="No SensoryEval found with given id and seqno")
 
         # Call 2nd team's API
-        response = requests.get(
-            "http://3.36.105.46:5000/predict",
-            params={"imagePath": sensory_eval.imagePath},
+        response = requests.post(
+            f"{keyId.ML_server_base_url}/predict",
+            data={"imagePath": sensory_eval.imagePath},
             timeout=10,
         )
 
