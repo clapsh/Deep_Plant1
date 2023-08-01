@@ -64,6 +64,13 @@ class MyFlaskApp:
         @self.app.route("/predict", methods=["POST"])
         def predict_db_data():
             return _make_response(self._predict_db_data(), "http://localhost:3000")
+        
+        @self.app.route("/predict/get", methods=["GET"])
+        def get_predict_db_data():
+            id = request.args.get("id")
+            seqno = request.args.get("seqno")
+            return _make_response(self._get_predict_db_data(id,seqno), "http://localhost:3000")
+        
 
         @self.app.route("/meat/get", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
@@ -1803,9 +1810,10 @@ class MyFlaskApp:
 
         # Decode the response data
         response_data = response.json()
-
+        print(response_data)
         # Merge the response data with the existing data
         data.update(response_data)
+        
         # Change the key name from 'gradeNum' to 'xai_gradeNum'
         if "gradeNum" in data:
             data["xai_gradeNum"] = data.pop("gradeNum")
@@ -1828,6 +1836,19 @@ class MyFlaskApp:
         # 의문점1 : 이거 시간 오바 안 뜨려나?
         # 의문점2 : 로딩창 안 뜨나
 
+    def _get_predict_db_data(self,id,seqno):
+        id = safe_str(id)
+        seqno = safe_int(seqno)
+        if id is None or seqno is None:
+            abort(404,description="Wrong id or seqno")
+        try:
+            result = get_AI_SensoryEval(rds_db,id,seqno)
+        except Exception as e:
+            abort(401,description = e)
+        if result is not None:
+            return jsonify(result),200
+        else:
+            abort(404,description="No data in AI Sensory Evaluate DB")
     # 4. Utils
 
     def transfer_folder_image(self, id, new_meat, folder):

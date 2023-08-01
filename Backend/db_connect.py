@@ -567,7 +567,6 @@ def create_AI_SensoryEval(db, meat_data: dict, seqno: int, id: str):
     # Create a new Meat object
     try:
         new_SensoryEval = AI_SensoryEval(**meat_data)
-        print(to_dict(new_SensoryEval))
     except Exception as e:
         raise Exception("Wrong AI sensory eval DB field items" + str(e))
     return new_SensoryEval
@@ -879,3 +878,19 @@ def get_db_data_():
 
         result[species.value] = category_dict
     return result
+
+def get_AI_SensoryEval(db,id,seqno):
+    ai_sensoryEval = (
+        db.session.query(AI_SensoryEval)
+        .filter(
+            AI_SensoryEval.id == id,
+            AI_SensoryEval.seqno == seqno,
+        )
+        .first()
+    )
+    if ai_sensoryEval:
+        ai_sensoryEval_history = to_dict(ai_sensoryEval)
+        ai_sensoryEval_history["createdAt"] = convert2string(ai_sensoryEval_history["createdAt"], 1)
+        return ai_sensoryEval_history
+    else:
+        return None
