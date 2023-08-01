@@ -63,11 +63,7 @@ class MyFlaskApp:
 
         @self.app.route("/predict", methods=["POST"])
         def predict_db_data():
-            id = safe_str(request.args.get("id"))
-            seqno = safe_int(request.args.get("seqno"))
-            return _make_response(
-                jsonify(self._predict_db_data(id, seqno)), "http://localhost:3000"
-            )
+            return _make_response(self._predict_db_data(), "http://localhost:3000")
 
         @self.app.route("/meat/get", methods=["GET"])  # 1. 전체 meat data 요청
         def get_meat_data():
@@ -1777,13 +1773,14 @@ class MyFlaskApp:
         return result
 
     # 3. AI API
-    def _predict_db_data(self, id, seqno):
+    def _predict_db_data(self):
         # 1. Data Valid Check
         if not request.json:
             abort(400, description="No data sent for update")
         # 2. 기본 데이터 받아두기
         data = request.get_json()
-
+        id = data.get("id")
+        seqno = data.get("seqno")
         # Find SensoryEval data
         sensory_eval = SensoryEval.query.filter_by(id=id, seqno=seqno).first()
 
@@ -1794,12 +1791,14 @@ class MyFlaskApp:
         # Call 2nd team's API
         response = requests.post(
             f"{keyId.ML_server_base_url}/predict",
-            data={"imagePath": sensory_eval.imagePath},
+            data=json.dumps({"image_path": sensory_eval.imagePath}),
+            headers={"Content-Type": "application/json"},
             timeout=10,
         )
 
         # If the response was unsuccessful, abort
         if response.status_code != 200:
+            print(response)
             abort(500, description="Failed to get data from team 2's API")
 
         # Decode the response data
@@ -1807,12 +1806,16 @@ class MyFlaskApp:
 
         # Merge the response data with the existing data
         data.update(response_data)
+        # Change the key name from 'gradeNum' to 'xai_gradeNum'
+        if "gradeNum" in data:
+            data["xai_gradeNum"] = data.pop("gradeNum")
+        data["createdAt"] = datetime.now()
         try:
             # Create a new SensoryEval
             new_sensory_eval = create_AI_SensoryEval(rds_db, data, seqno, id)
 
             # Add new_sensory_eval to the session
-            rds_db.session.add(new_sensory_eval)
+            rds_db.session.merge(new_sensory_eval)
 
             # Commit the session to save the changes
             rds_db.session.commit()

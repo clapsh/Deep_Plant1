@@ -548,6 +548,7 @@ def create_AI_SensoryEval(db, meat_data: dict, seqno: int, id: str):
     # 1. freshmeat_data에 없는 필드 추가
     item_encoder(meat_data, "seqno", seqno)
     item_encoder(meat_data, "id", id)
+
     # 2. freshmeat_data에 있는 필드 수정
     for field in meat_data.keys():
         if field == "seqno":  # 여기 있어도 걍 입력된걸 써라~
@@ -559,11 +560,13 @@ def create_AI_SensoryEval(db, meat_data: dict, seqno: int, id: str):
                 item_encoder(meat_data, field, xai_grade_num.id)
             except Exception as e:
                 raise Exception("Invalid xai_grade_num id")
+        elif field == "createdAt":
+            pass
         else:
             item_encoder(meat_data, field)
     # Create a new Meat object
     try:
-        new_SensoryEval = SensoryEval(**meat_data)
+        new_SensoryEval = AI_SensoryEval(**meat_data)
         print(to_dict(new_SensoryEval))
     except Exception as e:
         raise Exception("Wrong AI sensory eval DB field items" + str(e))
