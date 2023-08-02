@@ -1111,11 +1111,12 @@ class MyFlaskApp:
         for speciesId in [0, 1]:  # 0 for cattle, 1 for pig
             region_counts = {}
             for region in regions:
+                region_like = "%".join(list(region))
                 count = (
                     Meat.query.join(Category)
                     .filter(
                         Category.speciesId == speciesId,
-                        Meat.farmAddr.like(f"%{region}%"),
+                        Meat.farmAddr.like(f"%{region_like}%"),
                         Meat.createdAt.between(start, end),
                         Meat.statusType == 2,
                     )
